@@ -1,6 +1,6 @@
 # Detection
 
-How SmartQuit decides how many windows an app has, whether it is playing anything, and which apps it is willing to consider at all.
+How Smart Quit decides how many windows an app has, whether it is playing anything, and which apps it is willing to consider at all.
 
 ## Accessibility over CGWindowList
 
@@ -9,7 +9,7 @@ Window counts come from the Accessibility API, not `CGWindowList`.
 `CGWindowList` reports every surface the window server knows about, including
 off-screen buffers, shadows, and helper windows belonging to frameworks. An app
 with no visible windows routinely still has entries there, so counting them
-produces false negatives — SmartQuit would conclude an app still has windows and
+produces false negatives — Smart Quit would conclude an app still has windows and
 never quit it.
 
 `AXUIElementCopyAttributeValue(app, kAXWindowsAttribute)` returns the windows an
@@ -40,7 +40,7 @@ and quitting the app would be a surprise.
 A window count is `Int?`. `nil` means the count could not be determined.
 
 An Accessibility query fails when the app is unresponsive, when it has not
-finished launching, or when SmartQuit's Accessibility permission has been
+finished launching, or when Smart Quit's Accessibility permission has been
 revoked. Reporting `0` in those cases would make every such app a quit
 candidate — a revoked permission would quit the user's entire session.
 

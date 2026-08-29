@@ -62,7 +62,7 @@ Quitting goes through `NSRunningApplication.terminate()`. Never `terminate(force
 
 The graceful path lets an app present its unsaved-changes dialog and refuse to
 quit. That refusal is the correct outcome, not a failure to work around: it is
-what keeps SmartQuit from ever costing the user work.
+what keeps Smart Quit from ever costing the user work.
 
 See `WorkspaceTerminator` in `Sources/SmartQuitCore/WorkspaceTerminator.swift`.
 
@@ -93,7 +93,7 @@ not been used for the grace period, and the user has just left it.
 
 ## Protected and excluded apps
 
-Finder and SmartQuit itself are never quit, and neither is anything on the user's exclude list.
+Finder and Smart Quit itself are never quit, and neither is anything on the user's exclude list.
 
 Finder has no meaningful windowless state and quitting it degrades the system.
 Exclusions are stored by bundle identifier and seeded on first run only, so an

@@ -57,7 +57,7 @@ final class MenuModelTests: XCTestCase {
             "Excluded apps",
             "Open Accessibility Settings…",
             "Launch at login",
-            "Quit SmartQuit",
+            "Quit Smart Quit",
         ])
     }
 

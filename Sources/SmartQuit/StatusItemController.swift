@@ -53,7 +53,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         let pending = !engine.countdowns(now: Date()).isEmpty
         let symbol = pending ? "hourglass.bottomhalf.filled" : "hourglass"
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "SmartQuit")
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Smart Quit")
         image?.isTemplate = true
         button.image = image
         button.appearsDisabled = !settings.isEnabled
@@ -66,7 +66,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         } else {
             state = "nothing waiting"
         }
-        button.toolTip = "SmartQuit — \(state)"
+        button.toolTip = "Smart Quit — \(state)"
     }
 
     // MARK: - Menu lifecycle
@@ -221,8 +221,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         alert.informativeText = """
             \(error.localizedDescription)
 
-            Launch at login needs SmartQuit to live somewhere stable. Move \
-            SmartQuit.app to your Applications folder and try again.
+            Launch at login needs Smart Quit to live somewhere stable. Move \
+            "Smart Quit.app" to your Applications folder and try again.
             """
         alert.runModal()
     }

@@ -124,7 +124,7 @@ public enum MenuModel {
             )
         )
         nodes.append(.separator)
-        nodes.append(MenuNode(title: "Quit SmartQuit", kind: .action(.quit)))
+        nodes.append(MenuNode(title: "Quit Smart Quit", kind: .action(.quit)))
 
         return nodes
     }

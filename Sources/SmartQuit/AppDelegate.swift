@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         sweeper.start()
-        Log.ui.info("SmartQuit started")
+        Log.ui.info("Smart Quit started")
     }
 
     /// Clears state for apps that quit on their own, so a recycled pid never

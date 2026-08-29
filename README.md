@@ -1,4 +1,4 @@
-<h1 align="center">SmartQuit</h1>
+<h1 align="center">Smart Quit</h1>
 
 <p align="center">
   <strong>Your Mac keeps apps running after you close their last window.</strong><br>
@@ -18,7 +18,7 @@ Closing a window on macOS doesn't quit the app. It lingers in the background,
 ready for an instant relaunch — which is genuinely useful, and also how you end
 up at 6pm with two dozen windowless apps quietly holding memory.
 
-SmartQuit keeps the instant relaunch and drops the pile-up. Close the last
+Smart Quit keeps the instant relaunch and drops the pile-up. Close the last
 window, walk away, and a few minutes later the app quits itself — gracefully,
 with every unsaved-changes dialog intact.
 
@@ -52,7 +52,7 @@ It lives in the menu bar. No Dock icon, no window, no preferences pane.
   Open Accessibility Settings…
 ✓ Launch at login
 ──────────────────────────────
-  Quit SmartQuit
+  Quit Smart Quit
 ```
 
 The hourglass icon fills as apps go on the clock, and dims when you pause it.
@@ -110,41 +110,51 @@ Needs macOS 14.2 Sonoma or later and the Xcode command line tools.
 ./Scripts/build-app.sh
 ```
 
-That builds `dist/SmartQuit.app` and ad-hoc signs it. Then:
+That builds `dist/Smart Quit.app`, signing it with the first codesigning
+certificate matching your Apple ID. Then:
 
 ```bash
-cp -R dist/SmartQuit.app ~/Applications/ && open ~/Applications/SmartQuit.app
+cp -R "dist/Smart Quit.app" ~/Applications/ && open ~/Applications/"Smart Quit.app"
 ```
 
 Look for the hourglass in the menu bar.
 
-> **Why no `.xcodeproj`?** SmartQuit is a Swift package: the logic lives in a
+> **Why no `.xcodeproj`?** Smart Quit is a Swift package: the logic lives in a
 > library target so `swift test` runs against it directly, and a script
 > assembles the `.app` bundle a menu bar app needs. No unmergeable project XML.
 
 ### Grant Accessibility permission
 
-**SmartQuit does nothing until you grant this.** It reads window counts through
+**Smart Quit does nothing until you grant this.** It reads window counts through
 the Accessibility API — it cannot see window contents, only how many windows
 each app has.
 
 macOS asks on first launch. If you miss the prompt, open **System Settings →
-Privacy & Security → Accessibility** and enable SmartQuit; the menu's *Open
+Privacy & Security → Accessibility** and enable Smart Quit; the menu's *Open
 Accessibility Settings…* item takes you straight there.
 
-> Ad-hoc signatures change on every rebuild, and macOS ties the Accessibility
-> grant to the signature. After rebuilding you may need to remove SmartQuit from
-> the list and add it back.
+> macOS ties the grant to the app's code signature. Signing with a real
+> certificate keeps it stable across rebuilds; an ad-hoc signature does not, and
+> a stale record has to be cleared with
+> `tccutil reset Accessibility com.smartquit.SmartQuit` before re-granting.
+>
+> Set `SMARTQUIT_SIGNING_ACCOUNT` to pick a certificate by Apple ID, or
+> `CODESIGN_IDENTITY` to name one outright.
 
 ### Gatekeeper
 
-An ad-hoc signature isn't notarised, so double-clicking may be blocked the first
-time. Right-click `SmartQuit.app` → **Open** → **Open**. Launching with `open`
-from the terminal avoids this entirely.
+A development certificate isn't notarised, so on another Mac double-clicking is
+blocked the first time. Right-click `Smart Quit.app` → **Open** → **Open**, or
+launch with `open` from the terminal.
+
+To hand it to someone else properly, `./Scripts/release.sh` builds a notarised,
+stapled `.dmg`. It needs a Developer ID Application certificate and a
+`notarytool` keychain profile, and says exactly what's missing if either isn't
+there.
 
 ### Launch at login
 
-Uses `SMAppService`, which registers the app by path. Keep `SmartQuit.app`
+Uses `SMAppService`, which registers the app by path. Keep `Smart Quit.app`
 somewhere stable — `~/Applications` or `/Applications` — or the login item will
 point at a file that has moved.
 

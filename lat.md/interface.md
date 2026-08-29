@@ -18,7 +18,7 @@ is asserted in `MenuModelTests`.
 When Accessibility permission is missing, the warning and the link to System
 Settings come before everything else.
 
-Without that permission SmartQuit cannot see windows, so nothing else in the menu
+Without that permission Smart Quit cannot see windows, so nothing else in the menu
 has any effect. Settings the user cannot act on should not sit above the reason
 they cannot act on them.
 
@@ -50,7 +50,7 @@ is not.
 ## The icon carries state
 
 The status item is an hourglass: empty when nothing is waiting, bottom-half
-filled when apps are on the clock, dimmed when SmartQuit is paused.
+filled when apps are on the clock, dimmed when Smart Quit is paused.
 
 This was a `moon.zzz` glyph, which sat a few slots away from the system Focus
 moon in the menu bar and read as a duplicate of it.
