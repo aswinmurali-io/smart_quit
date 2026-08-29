@@ -26,7 +26,6 @@ cd "$(dirname "$0")/.."
 APP_NAME="Smart Quit"
 BUNDLE="dist/${APP_NAME}.app"
 DMG="dist/SmartQuit.dmg"
-STAGING="build/dmg"
 NOTARY_PROFILE="${NOTARY_PROFILE:-smartquit-notary}"
 ENTITLEMENTS="Resources/SmartQuit.entitlements"
 
@@ -83,19 +82,7 @@ codesign --verify --strict --verbose=2 "${BUNDLE}"
 
 # MARK: Package
 
-echo "==> Building ${DMG}"
-rm -rf "${STAGING}" "${DMG}"
-mkdir -p "${STAGING}"
-cp -R "${BUNDLE}" "${STAGING}/"
-# A symlink to /Applications, so the disk image is a drag-and-drop installer
-# rather than something the user has to know where to put.
-ln -s /Applications "${STAGING}/Applications"
-
-hdiutil create \
-    -volname "${APP_NAME}" \
-    -srcfolder "${STAGING}" \
-    -ov -format UDZO \
-    "${DMG}"
+./Scripts/make-dmg.sh
 
 # MARK: Notarize
 #

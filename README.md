@@ -119,6 +119,15 @@ cp -R "dist/Smart Quit.app" ~/Applications/ && open ~/Applications/"Smart Quit.a
 
 Look for the hourglass in the menu bar.
 
+For a disk image instead:
+
+```bash
+./Scripts/make-dmg.sh
+```
+
+That writes `dist/SmartQuit.dmg` — a drag-to-Applications installer. It works on
+the Mac that built it; sharing it needs the notarised build below.
+
 > **Why no `.xcodeproj`?** Smart Quit is a Swift package: the logic lives in a
 > library target so `swift test` runs against it directly, and a script
 > assembles the `.app` bundle a menu bar app needs. No unmergeable project XML.

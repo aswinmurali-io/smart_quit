@@ -44,6 +44,21 @@ whose private keys are not usable, and signing with one fails late with
 `SMARTQUIT_SIGNING_ACCOUNT` chooses the account; `CODESIGN_IDENTITY` names an
 identity outright.
 
+## Packaging is split from notarizing
+
+`Scripts/make-dmg.sh` builds the disk image; `Scripts/release.sh` notarizes what it built.
+
+The two are separate because they have different prerequisites. Building a
+`.dmg` needs nothing but the app, so it works with whatever signature is to
+hand; notarizing needs a Developer ID certificate and a `notarytool` profile.
+Folding them together would mean no disk image at all until both exist.
+
+An unnotarized image is still useful — it installs on the machine that built it —
+so the script says what it produced rather than implying more. macOS treats an
+unnotarized app under quarantine as damaged rather than untrusted, which reads
+as a broken download, so the distinction is worth stating where someone will see
+it.
+
 ## Distribution needs Developer ID and notarization
 
 `Scripts/release.sh` produces the stapled disk image; `Scripts/build-app.sh` produces something only this machine will run.
