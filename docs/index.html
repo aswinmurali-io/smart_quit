@@ -86,43 +86,41 @@ body::before {
   gap: 10px;
 }
 
-.bar-name {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-right: auto;
-}
-
-.bar-glyphs { display: flex; align-items: center; gap: 16px; }
+.bar-glyphs { display: flex; align-items: center; gap: 14px; margin-left: auto; }
 
 .bar-item {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 22px;
-  border-radius: 5px;
-  color: rgba(255, 255, 255, 0.82);
+  width: 22px;
+  height: 20px;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .bar-item--open { background: rgba(255, 255, 255, 0.26); color: #fff; }
 
 .bar-clock {
+  margin-left: auto;
   font-size: 12.5px;
   color: rgba(255, 255, 255, 0.86);
   white-space: nowrap;
   margin-left: 4px;
 }
 
+@media (max-width: 1080px) { .bar-glyphs .bar-item:nth-child(2) { display: none; } }
+@media (max-width: 1010px) { .bar-glyphs .bar-item:nth-child(3) { display: none; } }
+@media (max-width: 940px)  { .bar-glyphs .bar-item:nth-child(4) { display: none; } }
+
 /* The menu hangs from its own icon, so the icon has to sit at the menu's left
    edge — the bar splits on the same columns as the stage below it. */
 @media (min-width: 940px) {
   .bar-inner { display: grid; grid-template-columns: 1fr 470px; gap: 40px; }
-  .bar-glyphs { padding-left: 4px; }
-  .bar-clock { margin-left: auto; }
+  .bar-glyphs { grid-column: 2; padding-left: 3px; }
 }
 
-.sand-shell { fill: none; stroke: currentColor; stroke-width: 1.4; }
-.sand-fill { fill: var(--sand); transition: transform 0.7s ease; }
+.sand-shell { fill: none; stroke: currentColor; stroke-width: 1.2; }
+.sand-cap { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; }
+.sand-fill { fill: var(--sand); transform-origin: 0 0; transition: transform 0.7s ease; }
 
 /* ---------- stage ---------- */
 
@@ -146,6 +144,28 @@ body::before {
   /* The menu stays pinned under the bar it drops from; the pitch centres in
      the desktop beside it. */
   .pitch { align-self: center; }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  margin: 0 0 26px -4px;
+}
+
+.appicon {
+  display: block;
+  width: 78px;
+  height: 78px;
+  border-radius: 17px;
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.5));
+}
+
+.brandname {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 31px;
+  letter-spacing: -0.03em;
 }
 
 .title {
@@ -188,15 +208,15 @@ body::before {
 .cta:active { transform: translateY(0); }
 .cta svg { width: 17px; height: 17px; }
 
-.cta--ghost {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--ink);
+.cta--github {
+  background: #21262D;
+  border: 1px solid #3D444D;
+  color: #F0F6FC;
   box-shadow: none;
 }
 
-.cta--ghost:hover { background: rgba(255, 255, 255, 0.12); }
-.cta--ghost .star { color: var(--sand); }
+.cta--github:hover { background: #30363D; border-color: #4A515B; }
+.cta--github .mark { width: 19px; height: 19px; }
 
 .note {
   display: block;
@@ -295,18 +315,38 @@ body::before {
 
 <div class="bar">
   <div class="wrap bar-inner">
-    <span class="bar-name">Smart Quit</span>
     <div class="bar-glyphs">
       <span class="bar-item bar-item--open">
-        <svg id="glyph" width="14" height="18" viewBox="0 0 15 19" aria-hidden="true">
+        <svg id="glyph" width="15" height="17" viewBox="0 0 15 17" aria-hidden="true">
           <clipPath id="hg">
-            <path d="M2.6 1.4h9.8c.2 0 .3.2.2.4L8.3 9.3c-.1.2-.1.3 0 .5l4.3 7.5c.1.2 0 .4-.2.4H2.6c-.2 0-.3-.2-.2-.4l4.3-7.5c.1-.2.1-.3 0-.5L2.4 1.8c-.1-.2 0-.4.2-.4Z"/>
+            <path d="M3.1 2.7h8.8L8.2 8.1c-.1.2-.1.3 0 .5l3.7 5.4H3.1l3.7-5.4c.1-.2.1-.3 0-.5L3.1 2.7Z"/>
           </clipPath>
           <g clip-path="url(#hg)">
-            <rect class="sand-fill" id="sand" x="0" y="0" width="15" height="19" transform="translate(0,19) scale(1,0)"/>
+            <rect class="sand-fill" id="sand" x="0" y="0" width="15" height="17" transform="translate(0,17) scale(1,0)"/>
           </g>
-          <path class="sand-shell" d="M2.6 1.4h9.8c.2 0 .3.2.2.4L8.3 9.3c-.1.2-.1.3 0 .5l4.3 7.5c.1.2 0 .4-.2.4H2.6c-.2 0-.3-.2-.2-.4l4.3-7.5c.1-.2.1-.3 0-.5L2.4 1.8c-.1-.2 0-.4.2-.4Z"/>
-          <path class="sand-shell" d="M1.6 1.4h11.8M1.6 17.7h11.8"/>
+          <path class="sand-shell" d="M3.1 2.7h8.8L8.2 8.1c-.1.2-.1.3 0 .5l3.7 5.4H3.1l3.7-5.4c.1-.2.1-.3 0-.5L3.1 2.7Z"/>
+          <path class="sand-cap" d="M2.4 2h10.2M2.4 14.8h10.2"/>
+      </span>
+      <span class="bar-item">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M13.7 10.6A6.2 6.2 0 0 1 5.4 2.3a6.2 6.2 0 1 0 8.3 8.3Z"/>
+        </svg>
+      </span>
+      <span class="bar-item">
+        <svg width="11" height="15" viewBox="0 0 11 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5.5 1v14l3.8-3.8L1.7 4.8M1.7 11.2l7.6-6.4L5.5 1"/>
+        </svg>
+      </span>
+      <span class="bar-item">
+        <svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M1 5.2h2.6L7 2.1v9.8L3.6 8.8H1V5.2Z" fill="currentColor"/>
+          <path d="M10 5a3.4 3.4 0 0 1 0 4"/><path d="M12.3 3a6.2 6.2 0 0 1 0 8"/>
+        </svg>
+      </span>
+      <span class="bar-item">
+        <svg width="17" height="13" viewBox="0 0 17 13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true">
+          <rect x="0.9" y="0.9" width="15.2" height="10" rx="1.8"/>
+          <path d="M5.6 12.1h5.8" stroke-linecap="round"/>
         </svg>
       </span>
       <span class="bar-item">
@@ -321,6 +361,13 @@ body::before {
           <path d="M19.4 4.6v2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
         </svg>
       </span>
+      <span class="bar-item">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <path d="M1 4h12M1 10h12"/>
+          <circle cx="4.6" cy="4" r="1.9" fill="var(--desk)"/>
+          <circle cx="9.4" cy="10" r="1.9" fill="var(--desk)"/>
+        </svg>
+      </span>
       <span class="bar-clock">Sat 29 Aug</span>
     </div>
   </div>
@@ -329,6 +376,10 @@ body::before {
 <main class="wrap stage">
 
   <div class="pitch">
+    <div class="brand">
+      <img class="appicon" src="icon.png" alt="" width="78" height="78">
+      <span class="brandname">Smart Quit</span>
+    </div>
     <h1 class="title">Closing a window was <em>never</em> quitting.</h1>
     <p class="sub">
       Close the last window, walk away, and a few minutes later the app quits
@@ -339,8 +390,8 @@ body::before {
         <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 1.5a.75.75 0 0 1 .75.75v6.44l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 0 1 1.06-1.06l2.22 2.22V2.25A.75.75 0 0 1 8 1.5ZM2.75 12a.75.75 0 0 1 .75.75v.75h9v-.75a.75.75 0 0 1 1.5 0v1.5a.75.75 0 0 1-.75.75H2.75a.75.75 0 0 1-.75-.75v-1.5a.75.75 0 0 1 .75-.75Z"/></svg>
         Download for macOS
       </a>
-      <a class="cta cta--ghost" href="https://github.com/aswinmurali-io/smart_quit">
-        <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 .8l2.2 4.5 5 .7-3.6 3.5.9 4.9L8 12.1l-4.5 2.3.9-4.9L.8 6l5-.7L8 .8Z"/></svg>
+      <a class="cta cta--github" href="https://github.com/aswinmurali-io/smart_quit">
+        <svg class="mark" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
         Star on GitHub
       </a>
     </div>
