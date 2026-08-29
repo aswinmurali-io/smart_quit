@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>SmartQuit</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.aswinmurali.SmartQuit</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>SmartQuit</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<!-- Menu bar only: no Dock icon, no main window. -->
+	<key>LSUIElement</key>
+	<true/>
+	<!-- terminate() sends a quit Apple Event. This path is not normally
+	     gated by the Automation privacy prompt, but if it ever is, this is
+	     the message the user sees rather than a silent failure. -->
+	<key>NSAppleEventsUsageDescription</key>
+	<string>SmartQuit asks apps that have been left without windows to quit.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Aswin Murali. Licensed under the Apache License 2.0.</string>
+</dict>
+</plist>
