@@ -218,3 +218,36 @@ in `Scripts/release.sh`.
 The runner is `macos-15` rather than `macos-14`. The package declares a 14.2
 deployment target, and the host itself has to satisfy it before the test bundle
 will load.
+
+## The landing page ships from `docs/`
+
+`docs/index.html` is served by GitHub Pages straight from `main`, alongside the images the README already links.
+
+Pages is pointed at the `docs/` folder of the default branch, so publishing is a
+push and nothing else — no build step, no `gh-pages` branch, no second workflow
+that can be broken at the moment someone needs the download. The page is one
+static file with its CSS and its script inline; the only external request is the
+web font.
+
+The images stay where they were. `docs/icon.png` and `docs/menu.png` are
+referenced by the README with relative paths and by the page as siblings, so one
+copy serves both and neither can drift from the other. `docs/.nojekyll` keeps
+Pages from running the file through Jekyll, which would otherwise treat parts of
+it as a template.
+
+Its download button points at the same `releases/latest` redirect the README
+uses, for the reason recorded there: a version pinned into a URL is a
+documentation change waiting to be forgotten at the exact moment a release goes
+out.
+
+The page is the menu, not a page about the menu. It reproduces what
+`Scripts`-built screenshots show — the two switches, the app in front, the
+clock, the apps with windows, the grace period and excluded-apps submenus, the
+version — as a live menu hanging from an hourglass in the page's own menu bar.
+The countdown row ticks in `MenuModel.countdownTitle`'s format, falls back to
+the app's own "Nothing waiting to quit" when it runs out, and the hourglass
+fills as the grace period runs down, as the status item does.
+
+Everything the README already covers stays in the README. A landing page that
+repeated the design notes would be a second copy to keep true, and the one thing
+a screenshot cannot show is the countdown moving.

@@ -32,7 +32,7 @@ would file it with the timing settings it is not one of.
 
 ## Opening the menu sweeps
 
-The header reads "On the clock — checks every 15s". Opening the menu sweeps as well, silently.
+The header reads "On the clock — checks every 3s". Opening the menu sweeps as well, silently.
 
 An unchanged list is the normal case, and nothing else in the menu distinguishes
 "nothing has changed" from "this stopped updating". The interval comes from

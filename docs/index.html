@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Quit — quit the apps you already closed</title>
+<meta name="description" content="A 1.3 MB macOS menu bar app. Close the last window, walk away, and a few minutes later the app quits itself — gracefully.">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Smart Quit — quit the apps you already closed">
+<meta property="og:description" content="Closing a window was never quitting. Smart Quit gives an app a few minutes, then quits it for you.">
+<meta property="og:url" content="https://aswinmurali-io.github.io/smart_quit/">
+<meta property="og:image" content="https://aswinmurali-io.github.io/smart_quit/menu.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --desk:    #171320;
+  --ink:     #F4F2F7;
+  --muted:   #A49FB0;
+  --sand:    #E0912F;
+  --blue:    #1575F9;
+  --menu-bg: rgba(48, 42, 58, 0.72);
+  --menu-fg: #FFFFFF;
+  --menu-dim: rgba(255, 255, 255, 0.44);
+  --menu-line: rgba(255, 255, 255, 0.14);
+
+  --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--system);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* the desktop behind everything */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(900px 620px at 76% -8%, #6B2D74 0%, rgba(107,45,116,0) 62%),
+    radial-gradient(760px 540px at 8% 8%, #2C2350 0%, rgba(44,35,80,0) 58%),
+    radial-gradient(1000px 800px at 50% 120%, #1D1830 0%, rgba(29,24,48,0) 60%),
+    var(--desk);
+}
+
+:focus-visible { outline: 2px solid #7FB2FF; outline-offset: 3px; border-radius: 6px; }
+
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+/* ---------- menu bar ---------- */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 30px;
+  background: rgba(24, 20, 32, 0.55);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.bar-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-right: auto;
+}
+
+.bar-glyphs { display: flex; align-items: center; gap: 16px; }
+
+.bar-item {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.bar-item--open { background: rgba(255, 255, 255, 0.26); color: #fff; }
+
+.bar-clock {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.86);
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+/* The menu hangs from its own icon, so the icon has to sit at the menu's left
+   edge — the bar splits on the same columns as the stage below it. */
+@media (min-width: 940px) {
+  .bar-inner { display: grid; grid-template-columns: 1fr 470px; gap: 40px; }
+  .bar-glyphs { padding-left: 4px; }
+  .bar-clock { margin-left: auto; }
+}
+
+.sand-shell { fill: none; stroke: currentColor; stroke-width: 1.4; }
+.sand-fill { fill: var(--sand); transition: transform 0.7s ease; }
+
+/* ---------- stage ---------- */
+
+.stage {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 44px;
+  align-items: start;
+  padding: 56px 0 40px;
+}
+
+@media (min-width: 940px) {
+  .stage {
+    grid-template-columns: 1fr 470px;
+    gap: 40px;
+    padding: 6px 0 48px;
+    align-items: start;
+    min-height: calc(100vh - 132px);
+  }
+
+  /* The menu stays pinned under the bar it drops from; the pitch centres in
+     the desktop beside it. */
+  .pitch { align-self: center; }
+}
+
+.title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(40px, 6.6vw, 66px);
+  line-height: 1.0;
+  letter-spacing: -0.038em;
+  margin: 0 0 22px;
+  text-wrap: balance;
+}
+
+.title em { font-style: normal; color: var(--sand); }
+
+.sub {
+  font-size: 19px;
+  color: var(--muted);
+  max-width: 40ch;
+  margin: 0 0 34px;
+}
+
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 14px 26px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px -8px rgba(21, 117, 249, 0.8);
+  transition: transform 0.15s ease;
+}
+
+.cta:hover { transform: translateY(-1px); }
+.cta:active { transform: translateY(0); }
+.cta svg { width: 17px; height: 17px; }
+
+.cta--ghost {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.cta--ghost:hover { background: rgba(255, 255, 255, 0.12); }
+.cta--ghost .star { color: var(--sand); }
+
+.note {
+  display: block;
+  margin-top: 20px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ---------- the menu ---------- */
+
+.menu-hang { position: relative; }
+
+.menu {
+  width: 100%;
+  max-width: 400px;
+  padding: 5px 0;
+  border-radius: 10px;
+  background: var(--menu-bg);
+  backdrop-filter: blur(34px) saturate(190%);
+  -webkit-backdrop-filter: blur(34px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 30px 70px -18px rgba(0, 0, 0, 0.72), 0 2px 6px rgba(0, 0, 0, 0.4);
+  color: var(--menu-fg);
+  font-size: 14px;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.mi {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  padding: 3px 12px 3px 8px;
+  white-space: nowrap;
+}
+
+.mi-tick { font-size: 12px; color: var(--menu-fg); }
+.mi-label { overflow: hidden; text-overflow: ellipsis; }
+.mi-chev { color: rgba(255, 255, 255, 0.55); font-size: 13px; padding-left: 12px; }
+
+.mi--dim { color: var(--menu-dim); }
+.mi--indent .mi-label { padding-left: 18px; }
+.mi--on { background: rgba(255, 255, 255, 0.17); border-radius: 5px; margin: 0 5px; padding-left: 3px; }
+
+.mi-time { color: var(--sand); font-variant-numeric: tabular-nums; }
+
+.msep { height: 1px; background: var(--menu-line); margin: 5px 12px; }
+
+.mkey { color: rgba(255, 255, 255, 0.5); font-size: 13px; }
+
+.submenu {
+  position: absolute;
+  left: 62%;
+  top: 57%;
+  width: 214px;
+  padding: 5px 0;
+  border-radius: 10px;
+  background: var(--menu-bg);
+  backdrop-filter: blur(34px) saturate(190%);
+  -webkit-backdrop-filter: blur(34px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 30px 70px -18px rgba(0, 0, 0, 0.72);
+  font-size: 14px;
+}
+
+@media (max-width: 939px) {
+  .submenu { display: none; }
+  .menu { margin: 0 auto; }
+}
+
+/* ---------- footer ---------- */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  align-items: baseline;
+  padding: 0 0 40px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.foot a { color: var(--muted); text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, 0.16); }
+.foot a:hover { color: var(--ink); }
+.foot-end { margin-left: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="wrap bar-inner">
+    <span class="bar-name">Smart Quit</span>
+    <div class="bar-glyphs">
+      <span class="bar-item bar-item--open">
+        <svg id="glyph" width="14" height="18" viewBox="0 0 15 19" aria-hidden="true">
+          <clipPath id="hg">
+            <path d="M2.6 1.4h9.8c.2 0 .3.2.2.4L8.3 9.3c-.1.2-.1.3 0 .5l4.3 7.5c.1.2 0 .4-.2.4H2.6c-.2 0-.3-.2-.2-.4l4.3-7.5c.1-.2.1-.3 0-.5L2.4 1.8c-.1-.2 0-.4.2-.4Z"/>
+          </clipPath>
+          <g clip-path="url(#hg)">
+            <rect class="sand-fill" id="sand" x="0" y="0" width="15" height="19" transform="translate(0,19) scale(1,0)"/>
+          </g>
+          <path class="sand-shell" d="M2.6 1.4h9.8c.2 0 .3.2.2.4L8.3 9.3c-.1.2-.1.3 0 .5l4.3 7.5c.1.2 0 .4-.2.4H2.6c-.2 0-.3-.2-.2-.4l4.3-7.5c.1-.2.1-.3 0-.5L2.4 1.8c-.1-.2 0-.4.2-.4Z"/>
+          <path class="sand-shell" d="M1.6 1.4h11.8M1.6 17.7h11.8"/>
+        </svg>
+      </span>
+      <span class="bar-item">
+        <svg width="17" height="13" viewBox="0 0 17 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M1.2 4.4a11 11 0 0 1 14.6 0"/><path d="M4 7.3a7 7 0 0 1 9 0"/><path d="M6.7 10.1a3 3 0 0 1 3.6 0"/>
+        </svg>
+      </span>
+      <span class="bar-item">
+        <svg width="22" height="12" viewBox="0 0 22 12" fill="none" aria-hidden="true">
+          <rect x="0.8" y="1.4" width="17" height="9.2" rx="2.6" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+          <rect x="2.4" y="3" width="11" height="6" rx="1.4" fill="currentColor"/>
+          <path d="M19.4 4.6v2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
+        </svg>
+      </span>
+      <span class="bar-clock">Sat 29 Aug</span>
+    </div>
+  </div>
+</div>
+
+<main class="wrap stage">
+
+  <div class="pitch">
+    <h1 class="title">Closing a window was <em>never</em> quitting.</h1>
+    <p class="sub">
+      Close the last window, walk away, and a few minutes later the app quits
+      itself — gracefully, and never while you're looking at it.
+    </p>
+    <div class="cta-row">
+      <a class="cta" href="https://github.com/aswinmurali-io/smart_quit/releases/latest">
+        <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 1.5a.75.75 0 0 1 .75.75v6.44l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 0 1 1.06-1.06l2.22 2.22V2.25A.75.75 0 0 1 8 1.5ZM2.75 12a.75.75 0 0 1 .75.75v.75h9v-.75a.75.75 0 0 1 1.5 0v1.5a.75.75 0 0 1-.75.75H2.75a.75.75 0 0 1-.75-.75v-1.5a.75.75 0 0 1 .75-.75Z"/></svg>
+        Download for macOS
+      </a>
+      <a class="cta cta--ghost" href="https://github.com/aswinmurali-io/smart_quit">
+        <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 .8l2.2 4.5 5 .7-3.6 3.5.9 4.9L8 12.1l-4.5 2.3.9-4.9L.8 6l5-.7L8 .8Z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+    <span class="note">Notarised by Apple · macOS 14.2 or later · 1.3 MB</span>
+  </div>
+
+  <div class="menu-hang">
+    <div class="menu" role="img" aria-label="The Smart Quit menu: quitting and audio pause switched on, GitHub in front, an app on the clock with minutes left, five apps with windows, a five-minute grace period, an excluded-apps list, and the version.">
+      <div class="mi"><span class="mi-tick">✓</span><span class="mi-label">Quit idle apps</span></div>
+      <div class="mi"><span class="mi-tick">✓</span><span class="mi-label">Pause apps playing audio</span></div>
+
+      <div class="msep"></div>
+
+      <div class="mi mi--dim"><span></span><span class="mi-label">In front — GitHub</span></div>
+      <div class="mi mi--dim"><span></span><span class="mi-label">On the clock — checks every 3s</span></div>
+      <div id="clock"></div>
+      <div class="mi mi--dim"><span></span><span class="mi-label">With windows — 5</span></div>
+      <div class="mi mi--dim mi--indent"><span></span><span class="mi-label">Claude — 1 window</span></div>
+      <div class="mi mi--dim mi--indent"><span></span><span class="mi-label">GitHub — 1 window</span></div>
+      <div class="mi mi--dim mi--indent"><span></span><span class="mi-label">GitHub Desktop — 1 window</span></div>
+      <div class="mi mi--dim mi--indent"><span></span><span class="mi-label">Stickies — 1 window</span></div>
+      <div class="mi mi--dim mi--indent"><span></span><span class="mi-label">YouTube — 2 windows</span></div>
+
+      <div class="msep"></div>
+
+      <div class="mi"><span></span><span class="mi-label">Grace period — 5 minutes</span><span class="mi-chev">›</span></div>
+      <div class="mi mi--on"><span></span><span class="mi-label">Excluded apps</span><span class="mi-chev">›</span></div>
+
+      <div class="msep"></div>
+
+      <div class="mi"><span></span><span class="mi-label">Open Accessibility Settings…</span></div>
+      <div class="mi"><span class="mi-tick">✓</span><span class="mi-label">Launch at login</span></div>
+
+      <div class="msep"></div>
+
+      <div class="mi mi--dim"><span></span><span class="mi-label">Version 0.1.0</span></div>
+      <div class="mi"><span></span><span class="mi-label">Check for Updates…</span></div>
+
+      <div class="msep"></div>
+
+      <div class="mi"><span></span><span class="mi-label">Quit Smart Quit</span><span class="mkey">⌘Q</span></div>
+    </div>
+
+    <div class="submenu" aria-hidden="true">
+      <div class="mi"><span class="mi-tick">✓</span><span class="mi-label">Activity Monitor</span></div>
+      <div class="mi"><span></span><span class="mi-label">Claude</span></div>
+      <div class="mi"><span></span><span class="mi-label">Finder</span></div>
+      <div class="mi"><span></span><span class="mi-label">GitHub</span></div>
+      <div class="mi"><span></span><span class="mi-label">GitHub Desktop</span></div>
+      <div class="mi"><span class="mi-tick">✓</span><span class="mi-label">Mail</span></div>
+      <div class="mi"><span class="mi-tick">✓</span><span class="mi-label">Messages</span></div>
+      <div class="mi"><span></span><span class="mi-label">Safari</span></div>
+      <div class="mi"><span></span><span class="mi-label">Stickies</span></div>
+      <div class="mi"><span class="mi-tick">✓</span><span class="mi-label">Terminal</span></div>
+      <div class="mi"><span></span><span class="mi-label">YouTube</span></div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="wrap foot">
+  <a href="https://github.com/aswinmurali-io/smart_quit/tree/main/lat.md">Design notes</a>
+  <a href="https://github.com/aswinmurali-io/smart_quit/blob/main/LICENSE">Apache 2.0</a>
+  <span class="foot-end">Swift · AppKit · no daemon</span>
+</footer>
+
+<script>
+(function () {
+  var clockEl = document.getElementById('clock');
+  var sandEl = document.getElementById('sand');
+  if (!clockEl) return;
+
+  // MenuModel.countdownTitle's format: seconds under a minute, "3m 20s" above
+  // it, rounded up so a countdown with time left never reads as zero.
+  function remaining(total) {
+    var t = Math.max(0, Math.ceil(total));
+    if (t >= 60) return Math.floor(t / 60) + 'm ' + String(t % 60).padStart(2, '0') + 's';
+    return t + 's';
+  }
+
+  var queue = ['Safari', 'Preview', 'Notes', 'Numbers'];
+  var at = 0;
+  var grace = 300;
+  var left = 200;
+
+  function draw() {
+    var row = document.createElement('div');
+    row.className = 'mi mi--dim mi--indent';
+
+    if (left > 0) {
+      row.innerHTML = '<span></span><span class="mi-label">' + queue[at % queue.length] +
+        ' — <span class="mi-time">' + remaining(left) + '</span></span>';
+    } else {
+      // The app's own empty state, word for word.
+      row.innerHTML = '<span></span><span class="mi-label">Nothing waiting to quit</span>';
+    }
+
+    clockEl.textContent = '';
+    clockEl.appendChild(row);
+
+    // The status item's hourglass: empty with nothing waiting, filling as the
+    // grace period runs down.
+    var fill = left > 0 ? 1 - left / grace : 0;
+    sandEl.setAttribute('transform', 'translate(0,' + (19 * (1 - fill)) + ') scale(1,' + fill + ')');
+  }
+
+  draw();
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  setInterval(function () {
+    if (left > 0) {
+      left -= 1;
+    } else {
+      at += 1;
+      left = grace;
+    }
+    draw();
+  }, 1000);
+})();
+</script>
+
+</body>
+</html>
