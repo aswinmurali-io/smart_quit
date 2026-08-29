@@ -199,4 +199,17 @@ for points in [16, 32, 128, 256, 512] {
     }
 }
 
-print("Wrote \(iconset.path)")
+// The README's copy, written from the same drawing so the two cannot drift.
+// GitHub cannot render an .icns, and a PNG checked in by hand would be a second
+// source of truth for what the icon looks like.
+let readmeIcon = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    .appendingPathComponent("docs")
+try FileManager.default.createDirectory(at: readmeIcon, withIntermediateDirectories: true)
+
+guard let large = render(size: 512) else {
+    FileHandle.standardError.write(Data("error: could not render the README icon\n".utf8))
+    exit(1)
+}
+try write(large, to: readmeIcon.appendingPathComponent("icon.png"))
+
+print("Wrote \(iconset.path) and \(readmeIcon.path)/icon.png")

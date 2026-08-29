@@ -137,6 +137,10 @@ binary can only be replaced. The hourglass is drawn by hand rather than rendered
 from the `hourglass` SF Symbol the menu bar uses, because the SF Symbols licence
 does not allow a symbol to be used as an app icon.
 
+`make-icon.swift` also writes `docs/icon.png` for the README. GitHub cannot
+render an `.icns`, and a PNG dropped in by hand would be a second answer to what
+the icon looks like — this way there is one drawing and two outputs of it.
+
 The background is a single image at exactly the window's point size. The usual
 way to get a crisp one is a two-page TIFF from `tiffutil -cathidpicheck`, and it
 misbehaves: Finder takes the 2x page and draws it at 1:1 anchored bottom-left,

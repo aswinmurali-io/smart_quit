@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.png" alt="" width="128">
+</p>
+
 <h1 align="center">Smart Quit</h1>
 
 <p align="center">
