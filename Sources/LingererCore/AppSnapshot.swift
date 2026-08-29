@@ -25,3 +25,16 @@ public struct AppSnapshot: Equatable {
         self.windowCount = windowCount
     }
 }
+
+extension AppSnapshot {
+    /// Combines a running app with the number of windows it was found to have.
+    public init(_ app: RunningApp, windowCount: Int?) {
+        self.init(
+            pid: app.pid,
+            bundleID: app.bundleID,
+            name: app.name,
+            isFrontmost: app.isFrontmost,
+            windowCount: windowCount
+        )
+    }
+}

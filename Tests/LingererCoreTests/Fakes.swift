@@ -53,3 +53,32 @@ extension AppSnapshot {
         )
     }
 }
+
+/// Window counts under full test control.
+final class FakeWindowCounter: WindowCounting {
+    var countsByPID: [pid_t: Int?] = [:]
+    private(set) var queried: [pid_t] = []
+
+    func standardWindowCount(pid: pid_t) -> Int? {
+        queried.append(pid)
+        return countsByPID[pid] ?? 0
+    }
+}
+
+/// A canned list of running applications.
+final class FakeAppsProvider: RunningAppsProviding {
+    var apps: [RunningApp] = []
+
+    func regularApps() -> [RunningApp] { apps }
+}
+
+extension RunningApp {
+    static func make(
+        pid: pid_t = 1,
+        bundleID: String = "com.example.App",
+        name: String = "App",
+        isFrontmost: Bool = false
+    ) -> RunningApp {
+        RunningApp(pid: pid, bundleID: bundleID, name: name, isFrontmost: isFrontmost)
+    }
+}
