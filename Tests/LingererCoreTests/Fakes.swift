@@ -58,9 +58,12 @@ extension AppSnapshot {
 final class FakeWindowCounter: WindowCounting {
     var countsByPID: [pid_t: Int?] = [:]
     private(set) var queried: [pid_t] = []
+    /// Runs during the count, to simulate the world changing mid-sweep.
+    var onQuery: ((pid_t) -> Void)?
 
     func standardWindowCount(pid: pid_t) -> Int? {
         queried.append(pid)
+        onQuery?(pid)
         return countsByPID[pid] ?? 0
     }
 }
@@ -68,8 +71,10 @@ final class FakeWindowCounter: WindowCounting {
 /// A canned list of running applications.
 final class FakeAppsProvider: RunningAppsProviding {
     var apps: [RunningApp] = []
+    var frontmost: pid_t?
 
     func regularApps() -> [RunningApp] { apps }
+    func frontmostPID() -> pid_t? { frontmost }
 }
 
 extension RunningApp {

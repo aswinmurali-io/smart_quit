@@ -70,7 +70,14 @@ public final class AppSweeper {
             let snapshots = Self.snapshots(for: apps, using: self.counter)
 
             DispatchQueue.main.async {
-                self.engine.apply(snapshots, now: self.now())
+                // Re-read the frontmost app rather than trusting the value
+                // captured before counting began. Counting takes time, and
+                // quitting the app the user just switched to would be the worst
+                // thing this app could do.
+                let frontmost = self.provider.frontmostPID()
+                let fresh = snapshots.map { $0.withFrontmost($0.pid == frontmost) }
+
+                self.engine.apply(fresh, now: self.now())
                 self.isSweeping = false
                 self.onSweepCompleted?()
             }

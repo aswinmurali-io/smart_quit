@@ -27,6 +27,17 @@ public struct AppSnapshot: Equatable {
 }
 
 extension AppSnapshot {
+    /// A copy with the frontmost flag brought up to date.
+    func withFrontmost(_ isFrontmost: Bool) -> AppSnapshot {
+        AppSnapshot(
+            pid: pid,
+            bundleID: bundleID,
+            name: name,
+            isFrontmost: isFrontmost,
+            windowCount: windowCount
+        )
+    }
+
     /// Combines a running app with the number of windows it was found to have.
     public init(_ app: RunningApp, windowCount: Int?) {
         self.init(

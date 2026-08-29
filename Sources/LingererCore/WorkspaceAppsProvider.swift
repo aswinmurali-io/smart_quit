@@ -5,9 +5,13 @@ import Foundation
 public final class WorkspaceAppsProvider: RunningAppsProviding {
     public init() {}
 
+    public func frontmostPID() -> pid_t? {
+        NSWorkspace.shared.frontmostApplication?.processIdentifier
+    }
+
     public func regularApps() -> [RunningApp] {
         let workspace = NSWorkspace.shared
-        let frontmostPID = workspace.frontmostApplication?.processIdentifier
+        let frontmost = frontmostPID()
 
         return workspace.runningApplications.compactMap { app in
             // Only Dock-visible apps. Accessory and prohibited policies cover
@@ -20,7 +24,7 @@ public final class WorkspaceAppsProvider: RunningAppsProviding {
                 pid: app.processIdentifier,
                 bundleID: bundleID,
                 name: app.localizedName ?? bundleID,
-                isFrontmost: app.processIdentifier == frontmostPID
+                isFrontmost: app.processIdentifier == frontmost
             )
         }
     }

@@ -54,3 +54,74 @@ final class AppSweeperTests: XCTestCase {
         XCTAssertEqual(counter.queried, [1, 2, 3])
     }
 }
+
+// MARK: - Frontmost freshness
+
+extension AppSweeperTests {
+    /// Counting windows takes time, during which the user can switch apps. The
+    /// frontmost app must be re-read afterwards, or Lingerer can quit the very
+    /// app the user just activated.
+    func testDoesNotQuitAnAppTheUserActivatedWhileItsWindowsWereCounted() {
+        let terminator = SpyTerminator()
+        let sweeper = self.sweeper(terminator: terminator)
+        provider.apps = [.make(pid: 1)]
+        provider.frontmost = nil
+
+        sweepAndWait(sweeper)
+        // The user activates the app while the second sweep is counting.
+        counter.onQuery = { [weak self] _ in self?.provider.frontmost = 1 }
+        sweepAndWait(sweeper)
+
+        XCTAssertEqual(terminator.terminated, [])
+    }
+
+    /// Guards the test above: without the activation, the app is quit.
+    func testQuitsThatSameAppWhenTheUserDoesNotActivateIt() {
+        let terminator = SpyTerminator()
+        let sweeper = self.sweeper(terminator: terminator)
+        provider.apps = [.make(pid: 1)]
+        provider.frontmost = nil
+
+        sweepAndWait(sweeper)
+        sweepAndWait(sweeper)
+
+        XCTAssertEqual(terminator.terminated, [1])
+    }
+
+    func testReportsEachCompletedSweepExactlyOnce() {
+        let sweeper = self.sweeper(terminator: SpyTerminator())
+        provider.apps = [.make(pid: 1)]
+
+        var completions = 0
+        let done = expectation(description: "swept")
+        sweeper.onSweepCompleted = {
+            completions += 1
+            done.fulfill()
+        }
+        sweeper.sweep()
+        wait(for: [done], timeout: 2)
+
+        XCTAssertEqual(completions, 1)
+    }
+
+    // MARK: Helpers
+
+    private func sweeper(terminator: SpyTerminator) -> AppSweeper {
+        let settings = FakeSettings()
+        // Zero grace: the second sweep is the one that decides.
+        settings.globalGracePeriod = 0
+        let engine = LingerEngine(
+            settings: settings,
+            terminator: terminator,
+            protectedBundleIDs: []
+        )
+        return AppSweeper(provider: provider, counter: counter, engine: engine)
+    }
+
+    private func sweepAndWait(_ sweeper: AppSweeper, file: StaticString = #filePath, line: UInt = #line) {
+        let done = expectation(description: "sweep")
+        sweeper.onSweepCompleted = { done.fulfill() }
+        sweeper.sweep()
+        wait(for: [done], timeout: 2)
+    }
+}
