@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Your Mac keeps apps running after you close their last window.</strong><br>
-  That's a feature — right up until it's thirty of them.
+  That's a feature — right up until it's thirty of them 😅.
 </p>
 
 <p align="center">
