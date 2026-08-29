@@ -50,12 +50,22 @@ record has to be cleared with
 `tccutil reset Accessibility com.smartquit.SmartQuit`.
 
 Any Apple Development certificate gives a stable identity, and the grant then
-survives rebuilds. The identity is matched by Apple ID rather than by taking the
-first certificate in the keychain: a keychain routinely holds work certificates
-whose private keys are not usable, and signing with one fails late with
-`errSecInternalComponent` and no indication of which key it wanted.
-`SMARTQUIT_SIGNING_ACCOUNT` chooses the account; `CODESIGN_IDENTITY` names an
-identity outright.
+survives rebuilds. The certificate is never picked by taking the first one in
+the keychain: a keychain routinely holds work certificates whose private keys
+are not usable, and signing with one fails late with `errSecInternalComponent`
+and no indication of which key it wanted.
+
+So the choice is only made when it is unambiguous. `security find-identity` is
+narrowed to `Apple Development` certificates, and exactly one match is used.
+Several matches sign ad-hoc and print the list, because guessing between them is
+the failure this rule exists to avoid; none also signs ad-hoc.
+`SMARTQUIT_SIGNING_ACCOUNT` narrows the match by Apple ID, and
+`CODESIGN_IDENTITY` names an identity outright.
+
+No Apple ID is written into the script. A default there would name the
+maintainer's account in a public repository, and would send every other
+contributor's build down the "no certificate found for someone else's email"
+path.
 
 ## Packaging is split from notarizing
 
@@ -188,3 +198,23 @@ Disk image backgrounds do not follow the system appearance, so it commits to a
 light palette rather than serving both badly. Nor can the `.app` extension be
 hidden from here: `AppleShowAllExtensions` overrides the per-file flag, and
 readers who have not set it see no extension anyway.
+
+## CI assembles the bundle, not only the library
+
+`.github/workflows/ci.yml` runs `swift test` and then `Scripts/build-app.sh`, because the bundle breaks in ways the test suite cannot see.
+
+`swift test` exercises `SmartQuitCore` and never touches `Info.plist`, the icon,
+the directory layout or `codesign`. A missing key or a renamed executable
+produces a bundle macOS refuses to launch while every test still passes, and the
+first sign of it is a broken download.
+
+So the workflow assembles the bundle and checks the executable and `Info.plist`
+are where the launcher expects them, then runs `codesign --verify`. The runner
+has no Apple Development certificate, so this signs ad-hoc — which is the point
+of the check being *assembled and signable* rather than *distributable*.
+Notarization needs secrets no pull request should have, and stays a local step
+in `Scripts/release.sh`.
+
+The runner is `macos-15` rather than `macos-14`. The package declares a 14.2
+deployment target, and the host itself has to satisfy it before the test bundle
+will load.

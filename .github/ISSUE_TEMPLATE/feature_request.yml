@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest something Smart Quit should do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Smart Quit is deliberately small: a menu bar item, no Dock icon, no
+        preferences window. Suggestions that keep it that way have the best
+        chance. [`lat.md/`](https://github.com/aswinmurali-io/smart_quit/tree/main/lat.md) records why the current behaviour is
+        what it is — worth a look before proposing a change to it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the situation, not the solution — the underlying problem is usually the useful part.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What did you try?
+      description: Excluding the app, a different grace period, a per-app grace period — and why it wasn't enough.
+    validations:
+      required: false

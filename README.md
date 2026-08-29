@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/aswinmurali-io/smart_quit/actions/workflows/ci.yml"><img src="https://github.com/aswinmurali-io/smart_quit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14.2%2B-000000?logo=apple&logoColor=white" alt="macOS 14.2+">
   <img src="https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white" alt="Swift 5.9">
   <img src="https://img.shields.io/badge/AppKit-menu%20bar-1575F9" alt="AppKit menu bar">
@@ -86,20 +87,31 @@ dialog every few seconds, forever.
 
 ## Install
 
-Needs macOS 14.2 Sonoma or later and the Xcode command line tools.
+Needs macOS 14.2 Sonoma or later.
+
+### Download
+
+**[Get the latest `.dmg`](https://github.com/aswinmurali-io/smart_quit/releases/latest)**
+— signed with a Developer ID certificate and notarised by Apple, so it opens
+without a Gatekeeper warning. Drag *Smart Quit* to Applications, launch it, and
+look for the hourglass in the menu bar.
+
+Then grant Accessibility permission below — the app does nothing until you do.
+
+### Build from source
+
+Needs the Xcode command line tools.
 
 ```bash
 ./Scripts/build-app.sh
 ```
 
-That builds `dist/Smart Quit.app`, signing it with the first codesigning
-certificate matching your Apple ID. Then:
+That builds `dist/Smart Quit.app`, signing it with the Apple Development
+certificate in your keychain when there is exactly one. Then:
 
 ```bash
 cp -R "dist/Smart Quit.app" ~/Applications/ && open ~/Applications/"Smart Quit.app"
 ```
-
-Look for the hourglass in the menu bar.
 
 For a disk image instead:
 
@@ -108,8 +120,8 @@ For a disk image instead:
 ```
 
 That writes `dist/SmartQuit-0.1.0.dmg` — a drag-to-Applications installer, named
-for the version in `Info.plist`. It works on the Mac that built it; sharing it
-needs the notarised build below.
+for the version in `Info.plist`. It works on the Mac that built it; handing it
+to someone else needs the notarised build below.
 
 > **Why no `.xcodeproj`?** Smart Quit is a Swift package: the logic lives in a
 > library target so `swift test` runs against it directly, and a script
@@ -135,12 +147,16 @@ Accessibility Settings…* item takes you straight there.
 
 ### Gatekeeper
 
-A development certificate isn't notarised, so on another Mac double-clicking is
-blocked the first time. Right-click `Smart Quit.app` → **Open** → **Open**, or
-launch with `open` from the terminal.
+The released `.dmg` is notarised and stapled — it opens by double-clicking, with
+no warning and no right-click dance.
 
-To hand it to someone else properly, `./Scripts/release.sh` builds a notarised,
-stapled `.dmg`. It needs a Developer ID Application certificate and a
+A build of your own is a different matter: a development certificate isn't
+notarised, so on any Mac but the one that built it, double-clicking is blocked
+the first time. Right-click `Smart Quit.app` → **Open** → **Open**, or launch
+with `open` from the terminal.
+
+To hand a build to someone else properly, `./Scripts/release.sh` builds a
+notarised, stapled `.dmg`. It needs a Developer ID Application certificate and a
 `notarytool` keychain profile, and says exactly what's missing if either isn't
 there.
 
@@ -188,6 +204,12 @@ re-reading the frontmost app, which is the path that can quit the wrong app.
 why the Accessibility API rather than `CGWindowList`, why an unknown window
 count is not zero, why state is keyed by pid, and why a refused quit is never
 retried.
+
+## Contributing
+
+[CONTRIBUTING.md](.github/CONTRIBUTING.md) covers the setup, how the tests are
+shaped, and what a pull request should say. Found a security problem? Please
+report it privately — see [SECURITY.md](.github/SECURITY.md).
 
 ## Licence
 

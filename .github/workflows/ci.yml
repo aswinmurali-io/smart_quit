@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    # The package targets macOS 14.2 and links AppKit, ApplicationServices and
+    # CoreAudio, so it can only be built on a macOS runner — and the host has to
+    # be at least 14.2 itself for the test bundle to load.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: swift --version
+
+      - name: Build
+        run: swift build --configuration release
+
+      - name: Test
+        run: swift test
+
+      # The bundle assembly is as easy to break as the code, and breaks in ways
+      # `swift test` cannot see. Signing falls back to ad-hoc on the runner,
+      # which is fine: this checks the bundle is assembled and signable, not
+      # that it is distributable.
+      - name: Assemble the app bundle
+        run: ./Scripts/build-app.sh
+
+      - name: Verify the bundle
+        run: |
+          test -x "dist/Smart Quit.app/Contents/MacOS/SmartQuit"
+          test -f "dist/Smart Quit.app/Contents/Info.plist"
+          codesign --verify --verbose "dist/Smart Quit.app"

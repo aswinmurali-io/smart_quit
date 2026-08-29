@@ -7,9 +7,10 @@
 # registration all work. This script assembles that bundle and signs it.
 #
 # Set CODESIGN_IDENTITY to name the signing identity outright, or
-# SMARTQUIT_SIGNING_ACCOUNT to pick one by Apple ID. With neither, and no
-# matching certificate, the build falls back to an ad-hoc signature — see the
-# note under Signing for what that costs.
+# SMARTQUIT_SIGNING_ACCOUNT to pick one by Apple ID. With neither, the build
+# uses the keychain's Apple Development certificate when there is exactly one,
+# and otherwise falls back to an ad-hoc signature — see the note under Signing
+# for what that costs.
 
 set -euo pipefail
 
@@ -58,24 +59,37 @@ cp "${ICON}" "${BUNDLE}/Contents/Resources/${TARGET}.icns"
 # A real certificate gives a stable identity across rebuilds, so the grant
 # survives. Any Apple Development certificate will do for local use; shipping to
 # other people needs Developer ID, which Scripts/release.sh handles.
-# The identity is matched by account rather than by taking the first Apple
-# Development certificate in the keychain. A keychain routinely holds work
-# certificates whose private keys are not usable here — signing with one fails
-# late, with errSecInternalComponent and nothing to say which key it wanted.
-SIGNING_ACCOUNT="${SMARTQUIT_SIGNING_ACCOUNT:-aswinmurali.co@gmail.com}"
+# The identity is taken from the Apple Development certificates only, and only
+# when the choice is unambiguous. A keychain routinely holds work certificates
+# whose private keys are not usable here — signing with one fails late, with
+# errSecInternalComponent and nothing to say which key it wanted. So one
+# matching certificate is used, several are refused with the list printed, and
+# SMARTQUIT_SIGNING_ACCOUNT narrows the match by Apple ID.
+SIGNING_ACCOUNT="${SMARTQUIT_SIGNING_ACCOUNT:-}"
 
 IDENTITY="${CODESIGN_IDENTITY:-}"
+CANDIDATES=""
 if [[ -z "${IDENTITY}" ]]; then
-    IDENTITY="$(security find-identity -v -p codesigning \
-        | grep -m1 -F "${SIGNING_ACCOUNT}" \
+    CANDIDATES="$(security find-identity -v -p codesigning \
+        | grep -F '"Apple Development:' \
+        | grep -F "${SIGNING_ACCOUNT}" \
         | sed -E 's/.*"(.*)"/\1/' || true)"
+    if [[ "$(grep -c . <<< "${CANDIDATES}")" -eq 1 ]]; then
+        IDENTITY="${CANDIDATES}"
+    fi
 fi
 
 if [[ -z "${IDENTITY}" ]]; then
-    echo "==> Signing (ad-hoc — no certificate found for ${SIGNING_ACCOUNT})"
+    if [[ -n "${CANDIDATES}" ]]; then
+        echo "==> Signing (ad-hoc — more than one Apple Development certificate matched)"
+        sed 's/^/      /' <<< "${CANDIDATES}"
+        echo "    Set SMARTQUIT_SIGNING_ACCOUNT to your Apple ID, or CODESIGN_IDENTITY to one of these."
+    else
+        echo "==> Signing (ad-hoc — no Apple Development certificate${SIGNING_ACCOUNT:+ for ${SIGNING_ACCOUNT}} in the keychain)"
+        echo "    Set SMARTQUIT_SIGNING_ACCOUNT or CODESIGN_IDENTITY to use one."
+    fi
     echo "    The Accessibility grant will not survive the next rebuild."
     echo "    Clear it with: tccutil reset Accessibility com.smartquit.SmartQuit"
-    echo "    Set SMARTQUIT_SIGNING_ACCOUNT or CODESIGN_IDENTITY to use a certificate."
     codesign --force --sign - --timestamp=none "${BUNDLE}"
 else
     echo "==> Signing as ${IDENTITY}"

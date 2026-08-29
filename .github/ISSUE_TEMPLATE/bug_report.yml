@@ -1,0 +1,82 @@
+name: Bug report
+description: Smart Quit quit something it shouldn't have, or didn't quit something it should have.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two things worth checking first, because they are working as designed:
+
+        - An app that **refuses to quit** because it has unsaved work. Smart Quit
+          asks politely and never forces.
+        - An app that **never goes on the clock** while it is playing audio, is
+          on the exclude list, or still has a minimized or hidden window.
+
+        If you found a security problem, please report it privately instead:
+        [open a draft advisory](https://github.com/aswinmurali-io/smart_quit/security/advisories/new).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did Smart Quit do, and what did you expect instead?
+      placeholder: Safari was quit while it still had a window open on my second display.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Safari, close its last window
+        2. Wait 5 minutes
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: |
+        Every state transition is logged. Reproduce the problem, then paste what
+        this prints — it usually says exactly which decision went wrong.
+      value: |
+        <details><summary>log show output</summary>
+
+        ```
+        log show --predicate 'subsystem == "com.smartquit.SmartQuit"' --last 30m --info --debug
+        ```
+
+        </details>
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Smart Quit version
+      description: The "Version" line in the menu.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: 15.1 (Apple silicon)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - The notarised .dmg from Releases
+        - Built from source with Scripts/build-app.sh
+        - Something else
+    validations:
+      required: true
