@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white" alt="macOS 13+">
+  <img src="https://img.shields.io/badge/macOS-14.2%2B-000000?logo=apple&logoColor=white" alt="macOS 14.2+">
   <img src="https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white" alt="Swift 5.9">
   <img src="https://img.shields.io/badge/AppKit-menu%20bar-1575F9" alt="AppKit menu bar">
   <img src="https://img.shields.io/badge/licence-Apache%202.0-blue" alt="Apache 2.0">
@@ -32,6 +32,7 @@ It lives in the menu bar. No Dock icon, no window, no preferences pane.
   On the clock
     Preview — 2m 15s
     Notes — 4m 03s
+    Spotify — paused (playing audio)
 ──────────────────────────────
   Grace period — 5 minutes    ▸
       1 minute
@@ -44,8 +45,8 @@ It lives in the menu bar. No Dock icon, no window, no preferences pane.
       Per-app grace periods   ▸
   Excluded apps               ▸
       Preview
-      Notes
-    ✓ Spotify
+      Spotify
+    ✓ Notes
 ──────────────────────────────
   Open Accessibility Settings…
 ✓ Launch at login
@@ -64,10 +65,14 @@ stateDiagram-v2
     state "On the clock" as C
     state "Quit requested" as Q
     state "Left alone" as L
+    state "Paused" as P
 
     [*] --> W
     W --> C: last window closes
     C --> W: a window reappears
+    C --> P: starts playing audio
+    P --> C: audio stops
+    P --> W: a window reappears
     C --> Q: grace period elapses
     Q --> [*]: app quits
     Q --> L: refuses, or still up after 10s
@@ -75,6 +80,10 @@ stateDiagram-v2
 ```
 
 One timer sweeps every app every 15 seconds — not a timer per app.
+
+**Paused** holds the clock rather than resetting it. Close Spotify's window
+mid-album and it stops counting down; when the music ends it resumes from the
+time it had left, not from the top.
 
 An app that refuses to quit lands in **Left alone** and is never asked again
 until it shows a window. Otherwise an app holding unsaved work would get a save
@@ -89,11 +98,12 @@ dialog every 15 seconds, forever.
 | **Apps it couldn't inspect** | An unreadable window count is *unknown*, never *zero*. Without that distinction, a hung app — or a revoked permission — reads as windowless and gets quit. |
 | **Minimized or hidden apps** | Both still count as having windows. A minimized window is work in progress. |
 | **Finder, menu bar utilities, background agents** | Windowless by design. Only regular, Dock-visible apps are eligible. |
-| **Your exclude list** | Spotify, Music, Mail, Messages, Calendar, Activity Monitor, Terminal and iTerm are excluded out of the box. Toggle any running app from the menu. |
+| **Anything playing audio** | Its clock pauses for as long as the sound lasts — including audio coming from a helper process, so a browser tab or an Electron app counts too. |
+| **Your exclude list** | Music, Mail, Messages, Calendar, Activity Monitor, Terminal and iTerm are excluded out of the box. Toggle any running app from the menu. |
 
 ## Install
 
-Needs macOS 13 Ventura or later and the Xcode command line tools.
+Needs macOS 14.2 Sonoma or later and the Xcode command line tools.
 
 ```bash
 ./Scripts/build-app.sh

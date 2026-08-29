@@ -98,7 +98,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func tickCountdowns() {
         for countdown in engine.countdowns(now: Date()) {
             countdownItems[countdown.bundleID]?.title =
-                "\(countdown.name) — \(CountdownFormatter.string(for: countdown.remaining))"
+                MenuModel.countdownTitle(for: countdown)
         }
     }
 

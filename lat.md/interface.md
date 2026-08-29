@@ -47,3 +47,15 @@ only the countdown labels.
 Rebuilding the whole menu each second would collapse any submenu the user has
 open. Countdown rows carry their bundle identifier so their labels can be found
 and updated in place.
+
+The row's text is built by `MenuModel` rather than by the status item, so the
+label written on a tick is the one the menu was built with.
+
+## A paused countdown says why
+
+An app whose clock is held reads "paused (playing audio)" in place of a time.
+
+The frozen number would be noise: what the user needs to know is that the app is
+safe for as long as it keeps playing, not what it will resume from. Paused rows
+sort below live ones, so an app that is about to be quit is never pushed down by
+one that is going nowhere.

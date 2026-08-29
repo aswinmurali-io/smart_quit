@@ -13,6 +13,30 @@ back is evidence the app is in use.
 
 See `QuitEngine` in `Sources/SmartQuitCore/QuitEngine.swift`.
 
+## Audio pauses the clock
+
+An app that is playing audio holds its clock where it is, and resumes from there once the sound stops.
+
+Time served is banked rather than measured from a start date, precisely so it
+can be held: a windowless app that plays for an hour comes back to the same
+remaining time it had when the music started. Pausing beats resetting because
+the app has genuinely been idle for that time, and beats excluding because the
+protection lapses on its own when the audio does.
+
+An app already playing when it goes windowless starts on the clock, paused. The
+menu shows it, which is the point — a hidden app is not obviously safe.
+
+The pause state observed at the end of one sweep decides whether the interval
+that follows counts, so audio starting or stopping mid-interval is credited to
+the nearest sweep. At a fifteen second sweep against a grace period measured in
+minutes, that error is not perceivable.
+
+Spotify is deliberately not in the default exclusions: the pause covers it
+better than an exclusion, which would leave it running forever once the music
+stopped.
+
+See `QuitEngine` in `Sources/SmartQuitCore/QuitEngine.swift`.
+
 ## State is keyed by pid
 
 Per-app state is keyed by process identifier, not bundle identifier.
@@ -70,6 +94,11 @@ Finder has no meaningful windowless state and quitting it degrades the system.
 Exclusions are stored by bundle identifier and seeded on first run only, so an
 app the user deliberately un-excludes does not come back on the next launch.
 
+The seeded list covers apps whose value is in staying running with no window at
+all — Mail fetching in the background, a terminal whose session outlives its
+window. Media players are not on it, because the audio pause protects them for
+exactly as long as they need it.
+
 See `DefaultExclusions` in `Sources/SmartQuitCore/DefaultExclusions.swift`.
 
 ## One sweep, not one timer per app
@@ -81,8 +110,8 @@ sweep also gives a consistent view: every decision in a pass is made against the
 same instant and the same list of running apps.
 
 Listing apps and applying decisions happen on the main queue. The Accessibility
-window counting between them runs on a utility queue, because those calls are
-synchronous and can block. A sweep that overruns the interval is skipped rather
+window counting and the audio lookup between them run on a utility queue,
+because those calls are synchronous and can block. A sweep that overruns the interval is skipped rather
 than queued behind the one in flight.
 
 Nothing in the engine or the sweeper is synchronised, so both are main queue

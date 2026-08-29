@@ -15,12 +15,48 @@ import Foundation
 public final class QuitEngine {
     /// Where an app sits in its journey from "windowless" to "quit".
     private enum State {
-        /// Has had no windows since this date.
-        case windowless(since: Date)
+        /// Has had no windows, and is serving out its grace period.
+        case windowless(Clock)
         /// We asked it to quit at this date and are waiting to see if it went.
         case quitRequested(at: Date)
         /// We asked, it stayed. We do not ask again until it shows a window.
         case surrendered
+    }
+
+    /// How much of an app's grace period it has served, and whether it is
+    /// still serving.
+    ///
+    /// Time is banked rather than measured from a start date because the clock
+    /// can be paused: an app playing audio holds where it is and resumes from
+    /// there, instead of restarting or running out under the music.
+    private struct Clock {
+        /// Windowless time served up to ``lastSeen``.
+        var served: TimeInterval
+        /// When the clock was last advanced.
+        var lastSeen: Date
+        /// Audio was playing at ``lastSeen``, so nothing accrues.
+        var isPaused: Bool
+
+        /// Time served as of `now`, including the gap since the last sweep.
+        ///
+        /// The menu ticks between sweeps, so this has to extrapolate — using
+        /// the pause state observed at ``lastSeen``, which is the only one we
+        /// have until the next sweep.
+        func served(at now: Date) -> TimeInterval {
+            guard !isPaused else { return served }
+            return served + max(0, now.timeIntervalSince(lastSeen))
+        }
+
+        /// The clock advanced to `now`, with a fresh pause state.
+        ///
+        /// The interval that just ended is credited according to the pause
+        /// state at its start, so audio beginning mid-interval still costs the
+        /// app that interval. At a fifteen second sweep the error is bounded by
+        /// one sweep in either direction, which no user can perceive against a
+        /// grace period measured in minutes.
+        func advanced(to now: Date, isPaused: Bool) -> Clock {
+            Clock(served: served(at: now), lastSeen: now, isPaused: isPaused)
+        }
     }
 
     /// An app being tracked, with enough identity to render it in the menu.
@@ -109,21 +145,45 @@ public final class QuitEngine {
             tracked[app.pid] = Tracked(
                 bundleID: app.bundleID,
                 name: app.name,
-                state: .windowless(since: now)
+                state: .windowless(
+                    Clock(served: 0, lastSeen: now, isPaused: app.isPlayingAudio)
+                )
             )
             let grace = settings.gracePeriod(forBundleID: app.bundleID)
-            Log.engine.info(
-                "\(app.name, privacy: .public) became windowless — quitting in \(Int(grace))s"
-            )
+            if app.isPlayingAudio {
+                Log.engine.info(
+                    "\(app.name, privacy: .public) became windowless while playing audio — paused"
+                )
+            } else {
+                Log.engine.info(
+                    "\(app.name, privacy: .public) became windowless — quitting in \(Int(grace))s"
+                )
+            }
             return
         }
 
         tracked[app.pid]?.name = app.name
 
         switch state {
-        case .windowless(let since):
+        case .windowless(let clock):
+            let advanced = clock.advanced(to: now, isPaused: app.isPlayingAudio)
+            tracked[app.pid]?.state = .windowless(advanced)
+
+            // Playing audio is being used, whatever the windows say. The clock
+            // holds where it is, so the app goes on serving its grace period
+            // from there once the sound stops.
+            guard !advanced.isPaused else {
+                if !clock.isPaused {
+                    Log.engine.info("\(app.name, privacy: .public) is playing audio — clock paused")
+                }
+                return
+            }
+            if clock.isPaused {
+                Log.engine.info("\(app.name, privacy: .public) stopped playing — clock resumed")
+            }
+
             let grace = settings.gracePeriod(forBundleID: app.bundleID)
-            guard now.timeIntervalSince(since) >= grace else { return }
+            guard advanced.served >= grace else { return }
             requestQuit(of: app, now: now)
 
         case .quitRequested(let at):
@@ -186,23 +246,32 @@ public final class QuitEngine {
     /// Apps currently on the clock, most urgent first.
     public func countdowns(now: Date) -> [Countdown] {
         tracked.compactMap { pid, entry -> Countdown? in
-            guard case .windowless(let since) = entry.state else { return nil }
+            guard case .windowless(let clock) = entry.state else { return nil }
 
             let grace = settings.gracePeriod(forBundleID: entry.bundleID)
-            let remaining = max(0, grace - now.timeIntervalSince(since))
+            let remaining = max(0, grace - clock.served(at: now))
             return Countdown(
                 pid: pid,
                 bundleID: entry.bundleID,
                 name: entry.name,
-                remaining: remaining
+                remaining: remaining,
+                isPaused: clock.isPaused
             )
         }
-        .sorted { ($0.remaining, $0.name) < ($1.remaining, $1.name) }
+        // Paused apps last: they are not going anywhere while they play, so
+        // they should not sit above an app that is about to be quit.
+        .sorted {
+            ($0.isPaused ? 1 : 0, $0.remaining, $0.name)
+                < ($1.isPaused ? 1 : 0, $1.remaining, $1.name)
+        }
     }
 
     /// When an app's windowless clock started, or `nil` if it is not on the clock.
+    ///
+    /// Derived from the time served, so a paused clock reports a start that
+    /// moves forward while it is held.
     func windowlessStart(forPID pid: pid_t) -> Date? {
-        guard case .windowless(let since) = tracked[pid]?.state else { return nil }
-        return since
+        guard case .windowless(let clock) = tracked[pid]?.state else { return nil }
+        return clock.lastSeen.addingTimeInterval(-clock.served)
     }
 }

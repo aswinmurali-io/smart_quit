@@ -212,3 +212,35 @@ final class MenuModelTests: XCTestCase {
         return children
     }
 }
+
+// MARK: - Paused countdowns
+
+extension MenuModelTests {
+    func testSaysAPausedCountdownIsWaitingOnAudio() {
+        let nodes = build(countdowns: [
+            Countdown(
+                pid: 1,
+                bundleID: "com.spotify.client",
+                name: "Spotify",
+                remaining: 135,
+                isPaused: true
+            ),
+        ])
+
+        XCTAssertTrue(nodes.contains { $0.title == "Spotify — paused (playing audio)" })
+    }
+
+    /// The status item ticks countdown rows in place, so it needs the same
+    /// title the menu was built with.
+    func testRendersTheSameTitleTheMenuUses() {
+        let countdown = Countdown(
+            pid: 1,
+            bundleID: "com.example.Preview",
+            name: "Preview",
+            remaining: 135
+        )
+        let nodes = build(countdowns: [countdown])
+
+        XCTAssertTrue(nodes.contains { $0.title == MenuModel.countdownTitle(for: countdown) })
+    }
+}

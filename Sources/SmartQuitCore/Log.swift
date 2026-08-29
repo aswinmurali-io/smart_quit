@@ -17,4 +17,7 @@ public enum Log {
 
     /// Menu bar and permission flows.
     public static let ui = Logger(subsystem: subsystem, category: "ui")
+
+    /// Which processes are playing audio, and why a query failed.
+    public static let audio = Logger(subsystem: subsystem, category: "audio")
 }

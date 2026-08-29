@@ -143,13 +143,24 @@ public enum MenuModel {
 
         nodes += countdowns.map {
             MenuNode(
-                title: "\($0.name) — \(CountdownFormatter.string(for: $0.remaining))",
+                title: countdownTitle(for: $0),
                 kind: .countdown(bundleID: $0.bundleID),
                 isEnabled: false,
                 indent: 1
             )
         }
         return nodes
+    }
+
+    /// The label for one countdown row.
+    ///
+    /// Public because the status item ticks these rows in place while the menu
+    /// is open, and has to write the same text the menu was built with.
+    public static func countdownTitle(for countdown: Countdown) -> String {
+        // The frozen number is not worth showing: what the user needs to know
+        // is that the app is safe for as long as it keeps playing.
+        guard !countdown.isPaused else { return "\(countdown.name) — paused (playing audio)" }
+        return "\(countdown.name) — \(CountdownFormatter.string(for: countdown.remaining))"
     }
 
     private static func gracePeriodMenu(settings: Settings, apps: [RunningApp]) -> MenuNode {

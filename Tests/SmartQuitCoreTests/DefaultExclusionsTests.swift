@@ -6,7 +6,6 @@ final class DefaultExclusionsTests: XCTestCase {
         XCTAssertEqual(
             DefaultExclusions.bundleIDs,
             [
-                "com.spotify.client",       // Spotify
                 "com.apple.Music",          // Music
                 "com.apple.mail",           // Mail
                 "com.apple.MobileSMS",      // Messages
@@ -16,5 +15,11 @@ final class DefaultExclusionsTests: XCTestCase {
                 "com.googlecode.iterm2",    // iTerm
             ]
         )
+    }
+
+    /// Spotify is not excluded: the audio pause covers it, and excluding it
+    /// would leave it running forever once the music stopped.
+    func testDoesNotExcludeSpotify() {
+        XCTAssertFalse(DefaultExclusions.bundleIDs.contains("com.spotify.client"))
     }
 }

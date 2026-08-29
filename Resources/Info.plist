@@ -19,7 +19,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>13.0</string>
+	<string>14.2</string>
 	<!-- Menu bar only: no Dock icon, no main window. -->
 	<key>LSUIElement</key>
 	<true/>

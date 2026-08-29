@@ -4,8 +4,8 @@ import Foundation
 ///
 /// A single repeating timer sweeps every application, rather than one timer per
 /// app. Listing applications and applying decisions happen on the main queue;
-/// the Accessibility window counting in between happens off it, because those
-/// calls are synchronous and can block on an unresponsive app.
+/// the Accessibility window counting and audio lookup in between happen off it,
+/// because those calls are synchronous and can block on an unresponsive app.
 ///
 /// - Important: ``start()``, ``sweep()`` and the engine they drive are main
 ///   queue only. Nothing here is synchronised, and the background hop is
@@ -18,6 +18,8 @@ public final class AppSweeper {
 
     private let provider: RunningAppsProviding
     private let counter: WindowCounting
+    private let audio: AudioActivityDetecting
+    private let ancestry: ProcessAncestry
     private let engine: QuitEngine
     private let now: () -> Date
     private let countingQueue = DispatchQueue(
@@ -34,11 +36,15 @@ public final class AppSweeper {
     public init(
         provider: RunningAppsProviding,
         counter: WindowCounting,
+        audio: AudioActivityDetecting = CoreAudioActivityDetector(),
+        ancestry: ProcessAncestry = SysctlProcessAncestry(),
         engine: QuitEngine,
         now: @escaping () -> Date = Date.init
     ) {
         self.provider = provider
         self.counter = counter
+        self.audio = audio
+        self.ancestry = ancestry
         self.engine = engine
         self.now = now
     }
@@ -73,9 +79,23 @@ public final class AppSweeper {
         let apps = provider.regularApps()
         // Captured up front so the background work touches none of our state.
         let counter = self.counter
+        let audio = self.audio
+        let ancestry = self.ancestry
 
         countingQueue.async { [weak self] in
-            let snapshots = Self.snapshots(for: apps, using: counter)
+            // Audio is reported per process, and a browser or Electron app
+            // plays through a helper, so each emitting pid is resolved back to
+            // the application that owns it.
+            let playingAudio = AudioAttribution.appsPlayingAudio(
+                audioPIDs: audio.pidsPlayingAudio(),
+                appPIDs: Set(apps.map(\.pid)),
+                ancestry: ancestry
+            )
+            let snapshots = Self.snapshots(
+                for: apps,
+                using: counter,
+                playingAudio: playingAudio
+            )
 
             DispatchQueue.main.async {
                 guard let self else { return }
@@ -93,8 +113,18 @@ public final class AppSweeper {
         }
     }
 
-    /// Pairs each app with its current window count.
-    static func snapshots(for apps: [RunningApp], using counter: WindowCounting) -> [AppSnapshot] {
-        apps.map { AppSnapshot($0, windowCount: counter.standardWindowCount(pid: $0.pid)) }
+    /// Pairs each app with its current window count and audio state.
+    static func snapshots(
+        for apps: [RunningApp],
+        using counter: WindowCounting,
+        playingAudio: Set<pid_t> = []
+    ) -> [AppSnapshot] {
+        apps.map {
+            AppSnapshot(
+                $0,
+                windowCount: counter.standardWindowCount(pid: $0.pid),
+                isPlayingAudio: playingAudio.contains($0.pid)
+            )
+        }
     }
 }
