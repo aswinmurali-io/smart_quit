@@ -140,7 +140,10 @@ public final class AppSweeper {
         using counter: WindowCounting,
         playingAudio: Set<pid_t> = []
     ) -> [AppSnapshot] {
-        apps.map {
+        // One snapshot of the system for the whole sweep, so every app is
+        // measured against the same instant.
+        counter.prepareForSweep()
+        return apps.map {
             AppSnapshot(
                 $0,
                 windowCount: counter.standardWindowCount(pid: $0.pid),

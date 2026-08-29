@@ -15,7 +15,78 @@ never quit it.
 `AXUIElementCopyAttributeValue(app, kAXWindowsAttribute)` returns the windows an
 app actually vends, which matches what a person would call a window.
 
+It has one blind spot, Mission Control Spaces, which `SpaceAwareWindowCounter`
+covers — see below.
+
 See `AccessibilityWindowCounter` in `Sources/SmartQuitCore/AccessibilityWindowCounter.swift`.
+
+## Windows on other Spaces are counted through SkyLight
+
+The Accessibility API enumerates the active Space only, so windows on another
+desktop are added back from the window server.
+
+This is not a failure that the `nil` rule below catches. Asked about an app
+whose windows are all on another desktop, `kAXWindowsAttribute` succeeds and
+returns an empty array: the count is a confident `0`, not an unknown. Moving a
+window to a second desktop and switching back was enough to have the app quit
+out from under it. A fullscreen window, which lives on a Space of its own, hit
+the same bug.
+
+`CGWindowList` is the only public API that sees across Spaces, and on its own it
+is exactly as unusable as the section above says. On an ordinary desktop it
+reports around ten times more layer-0 surfaces than there are windows — menu bar
+strips, icon buffers, and the remains of windows that were closed — none of them
+separable from a real window by size, by layer, or by `kCGWindowIsOnscreen`,
+which is false for a window on another Space just as it is for a dead buffer.
+
+Space membership is what separates them. A real window belongs to the Space it
+sits on; a leftover surface belongs to no Space at all. So a window is added to
+the count only when it is at layer 0, belongs to at least one Space, and belongs
+to none of the Spaces currently on screen. Each display shows its own Space, so
+"currently on screen" is the union across displays, and a window present on
+every Space is already in the Accessibility count.
+
+The Accessibility count stays authoritative for the Space it can see and the
+lookup only ever adds to it. That fixes the direction of any error: a surface
+mistaken for a window delays a quit, it never causes one. An unknown count stays
+unknown, because adding to `nil` would turn "we could not ask" into a number.
+
+See `SpaceAwareWindowCounter` in `Sources/SmartQuitCore/SpaceAwareWindowCounter.swift`
+and `SkyLightSpaceWindowLookup` in `Sources/SmartQuitCore/SpaceWindowLookup.swift`.
+
+## The Space lookup is private and optional
+
+Space membership comes from three SkyLight functions that Apple does not
+publish, resolved with `dlsym` rather than linked.
+
+Nothing public says which Space a window is on. `SLSMainConnectionID`,
+`SLSCopyManagedDisplaySpaces`, and `SLSCopySpacesForWindows` are what every
+window manager on macOS uses for it. Smart Quit ships as a signed disk image
+rather than through the App Store, so a private framework costs nothing at
+review; it costs maintenance, which is why the surface is three calls.
+
+If any symbol is missing, the lookup reports no windows anywhere and the
+Accessibility count stands alone. A macOS release that withdraws them therefore
+returns Smart Quit to its previous behaviour instead of stopping it launching.
+
+An empty set of active Spaces is treated the same way. Without knowing which
+Space is in front, every window would look as though it were somewhere else,
+and Smart Quit would stop quitting anything.
+
+See `SkyLight` in `Sources/SmartQuitCore/SkyLight.swift`.
+
+## The window list is read once per sweep
+
+`WindowCounting` has a `prepareForSweep()` hook, called before the first app of
+each sweep is counted.
+
+The Space lookup works from one snapshot of every window on the system, not by
+asking about a single process. Taking that snapshot inside
+`standardWindowCount(pid:)` would repeat a system-wide query for every running
+app and judge each of them against a slightly different moment.
+
+Counters that hold no per-sweep state — `AccessibilityWindowCounter` among them
+— get an empty default implementation and are unaffected.
 
 ## Only standard windows count
 
