@@ -125,7 +125,11 @@ Being in front and playing audio are the two reasons a row can sit still, so
 they share one parenthetical — "paused (playing audio, foreground)" — rather
 than accumulating brackets.
 
-The name is remembered rather than read fresh each time. Opening the menu makes
-Smart Quit active, and Smart Quit is an accessory app that never appears in
-`regularApps()`, so the app in front reads as nothing at precisely the moment
-someone is reading the menu. `StatusItemController` keeps the last one it saw.
+The name is recorded as activations happen, not read when the menu asks. Opening
+the menu makes Smart Quit active, and Smart Quit is an accessory app that never
+appears in `regularApps()`, so the app in front reads as nothing at precisely
+the moment the menu needs it — asking at that point answers nothing, every time.
+
+`StatusItemController` observes `NSWorkspace.didActivateApplicationNotification`
+instead, filtering to regular apps by the same rule `regularApps()` uses. That
+filter is what keeps Smart Quit itself from becoming the answer.

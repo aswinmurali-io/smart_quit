@@ -29,7 +29,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// must not rebuild the menu, or an open submenu collapses under the user.
     private var renderedCountdownIDs: [String] = []
 
-    /// The last application seen in front. See ``foregroundAppName(among:)``.
+    /// The application in front, recorded as activations happen.
+    ///
+    /// It cannot be worked out while the menu is being built: opening the menu
+    /// makes Smart Quit active, and Smart Quit is an accessory app that never
+    /// appears in `regularApps()`, so the app in front reads as nothing at
+    /// exactly the moment the menu needs it.
     private var lastForegroundApp: String?
 
     init(
@@ -51,7 +56,34 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.autoenablesItems = false
         menu.delegate = self
         statusItem.menu = menu
+        observeActivation()
         refreshIcon()
+    }
+
+    // MARK: - Which app is in front
+
+    /// Records the app in front as it changes, rather than asking when asked.
+    private func observeActivation() {
+        lastForegroundApp = provider.regularApps().first(where: \.isFrontmost)?.name
+
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                    as? NSRunningApplication,
+                  // The same rule `regularApps()` uses. An accessory app is not
+                  // what anyone means by the app they are in, and Smart Quit is
+                  // one — without this, opening the menu would answer "Smart
+                  // Quit" every time.
+                  app.activationPolicy == .regular
+            else { return }
+
+            let name = app.localizedName ?? app.bundleIdentifier
+            Log.ui.debug("In front: \(name ?? "unknown", privacy: .public)")
+            self?.lastForegroundApp = name
+        }
     }
 
     // MARK: - Status icon
@@ -149,21 +181,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             isAccessibilityGranted: AccessibilityPermission.isGranted,
             isLaunchAtLoginEnabled: LaunchAtLogin.isEnabled,
             version: AppInfo.version,
-            foregroundAppName: foregroundAppName(among: apps)
+            foregroundAppName: lastForegroundApp
         )
-    }
-
-    /// The application in front, remembered across the times we cannot see one.
-    ///
-    /// Opening the menu makes Smart Quit active, and Smart Quit is an accessory
-    /// app that never appears in `regularApps()` — so the frontmost app reads as
-    /// nothing at precisely the moment someone is reading the menu. Holding the
-    /// last one seen keeps the row answering the question it was asked.
-    private func foregroundAppName(among apps: [RunningApp]) -> String? {
-        if let front = apps.first(where: \.isFrontmost) {
-            lastForegroundApp = front.name
-        }
-        return lastForegroundApp
     }
 
     // MARK: - Rendering
