@@ -32,15 +32,19 @@ would file it with the timing settings it is not one of.
 
 ## Opening the menu sweeps
 
-The header reads "On the clock — checks every 15s, and when you open this menu", and both halves are true.
+The header reads "On the clock — checks every 15s". Opening the menu sweeps as well, silently.
 
 An unchanged list is the normal case, and nothing else in the menu distinguishes
 "nothing has changed" from "this stopped updating". The interval comes from
 `AppSweeper.interval` rather than being written out, so the two cannot drift.
 
 Waiting on the timer alone meant the list could be a full interval behind at the
-moment someone looked at it. `menuWillOpen` now starts a sweep, so opening the
-menu is a refresh rather than a read of whatever the last one left.
+moment someone looked at it, so `menuWillOpen` starts a sweep — opening the menu
+is a refresh rather than a read of whatever the last one left.
+
+The header does not mention it. Nobody has to open the menu to keep the list
+honest, and saying so would turn a status line into instructions for a thing
+that happens by itself.
 
 That sweep finishes while the menu is on screen, and folding its result in is
 where the care goes. Countdown labels already tick on their own timer, so a

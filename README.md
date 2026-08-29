@@ -33,7 +33,7 @@ runtime, no background daemon.
 ✓ Quit idle apps
 ✓ Pause apps playing audio
 ──────────────────────────────
-  On the clock — checks every 15s, and when you open this menu
+  On the clock — checks every 15s
     Preview — 2m 15s
     Notes — 4m 03s
     Spotify — paused (playing audio)

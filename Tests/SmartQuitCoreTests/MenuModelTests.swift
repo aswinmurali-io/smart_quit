@@ -51,7 +51,7 @@ final class MenuModelTests: XCTestCase {
         XCTAssertEqual(titles, [
             "Quit idle apps",
             "Pause apps playing audio",
-            "On the clock — checks every 15s, and when you open this menu",
+            "On the clock — checks every 15s",
             "Nothing waiting to quit",
             "Grace period — 5 minutes",
             "Excluded apps",
@@ -278,9 +278,7 @@ extension MenuModelTests {
 
 extension MenuModelTests {
     func testTheClockHeaderStatesHowOftenItChecks() {
-        XCTAssertTrue(build().contains {
-            $0.title == "On the clock — checks every 15s, and when you open this menu"
-        })
+        XCTAssertTrue(build().contains { $0.title == "On the clock — checks every 15s" })
     }
 
     /// Derived from the sweeper's interval rather than written out, so the two
@@ -290,9 +288,7 @@ extension MenuModelTests {
 
         XCTAssertEqual(
             header?.title,
-            "On the clock — checks every "
-                + "\(CountdownFormatter.string(for: AppSweeper.interval)), "
-                + "and when you open this menu"
+            "On the clock — checks every \(CountdownFormatter.string(for: AppSweeper.interval))"
         )
     }
 }
