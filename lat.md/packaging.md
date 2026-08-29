@@ -59,6 +59,29 @@ unnotarized app under quarantine as damaged rather than untrusted, which reads
 as a broken download, so the distinction is worth stating where someone will see
 it.
 
+## The window is arranged by Finder, on a read-write image
+
+The disk image is built twice: read-write so it can be arranged, then converted to the compressed image that ships.
+
+Icon positions, window size, icon size and the background picture all live in
+the volume's `.DS_Store`, and nothing writes one but Finder. `hdiutil` cannot
+set any of it. So the image is created read-write, mounted, driven through Apple
+Events, and only then converted — the conversion carries the `.DS_Store` across.
+
+Finder writes that file when the window closes, not when the properties are set.
+Detaching the volume with the window still open loses the entire layout while
+every command appears to have succeeded, so the script closes the window, waits,
+and then checks the file exists before converting. Without that check an
+unstyled image is indistinguishable from a styled one until someone opens it.
+
+A volume left mounted from an earlier run is the other way this fails quietly:
+the new image mounts as "Smart Quit 1" while Finder is told to arrange "Smart
+Quit", and obliges — on the stale volume. The script detaches leftovers first
+and reads the mount point back from `hdiutil` rather than assuming it.
+
+Scripting Finder needs Automation permission. Refused, the layout is skipped and
+reported rather than failing the build: an unarranged image still installs.
+
 ## Distribution needs Developer ID and notarization
 
 `Scripts/release.sh` produces the stapled disk image; `Scripts/build-app.sh` produces something only this machine will run.
@@ -78,11 +101,19 @@ Apple Events access it needs is granted by the user at runtime, not by an
 entitlement. The file exists so that set is stated rather than inferred from its
 absence.
 
-## The icon is drawn, not checked in
+## The icon and the disk image background are drawn, not checked in
 
-`Scripts/make-icon.swift` renders the `.icns` from paths.
+`Scripts/make-icon.swift` renders the `.icns` from paths, and `Scripts/make-dmg-background.swift` the disk image's backdrop.
 
 A generated icon can be reviewed in a diff and adjusted in one place, where a
 binary can only be replaced. The hourglass is drawn by hand rather than rendered
 from the `hourglass` SF Symbol the menu bar uses, because the SF Symbols licence
 does not allow a symbol to be used as an app icon.
+
+The background is written as a two-page TIFF, which is the only way to give
+Finder a retina representation — it takes the 2x page on a Retina display and
+the 1x page elsewhere, where a single PNG would be upscaled and visibly soft.
+Its arrow is positioned from the same constants as the icons in
+`Scripts/make-dmg.sh`; the two files have to agree or the arrow points at
+nothing. Disk image backgrounds do not follow the system appearance, so it
+commits to a light palette rather than serving both badly.
