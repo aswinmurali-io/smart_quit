@@ -10,6 +10,7 @@ public enum MenuAction: Equatable {
     case toggleExclusion(bundleID: String)
     case openAccessibilitySettings
     case toggleLaunchAtLogin
+    case checkForUpdates
     case quit
 }
 
@@ -62,7 +63,8 @@ public enum MenuModel {
         countdowns: [Countdown],
         apps: [RunningApp],
         isAccessibilityGranted: Bool,
-        isLaunchAtLoginEnabled: Bool
+        isLaunchAtLoginEnabled: Bool,
+        version: String?
     ) -> [MenuNode] {
         var nodes: [MenuNode] = []
 
@@ -122,6 +124,17 @@ public enum MenuModel {
                 kind: .action(.toggleLaunchAtLogin),
                 isChecked: isLaunchAtLoginEnabled
             )
+        )
+        nodes.append(.separator)
+
+        // A version nobody can read is no use when someone is reporting a bug,
+        // and it belongs next to the page they would go to about it. Omitted
+        // rather than guessed when the bundle cannot be read.
+        if let version {
+            nodes.append(.label("Version \(version)"))
+        }
+        nodes.append(
+            MenuNode(title: "Check for Updates…", kind: .action(.checkForUpdates))
         )
         nodes.append(.separator)
         nodes.append(MenuNode(title: "Quit Smart Quit", kind: .action(.quit)))

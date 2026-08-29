@@ -20,14 +20,16 @@ final class MenuModelTests: XCTestCase {
         countdowns: [Countdown] = [],
         apps: [RunningApp] = [],
         accessibilityGranted: Bool = true,
-        launchAtLogin: Bool = false
+        launchAtLogin: Bool = false,
+        version: String? = "0.1.0"
     ) -> [MenuNode] {
         MenuModel.build(
             settings: settings,
             countdowns: countdowns,
             apps: apps,
             isAccessibilityGranted: accessibilityGranted,
-            isLaunchAtLoginEnabled: launchAtLogin
+            isLaunchAtLoginEnabled: launchAtLogin,
+            version: version
         )
     }
 
@@ -57,6 +59,8 @@ final class MenuModelTests: XCTestCase {
             "Excluded apps",
             "Open Accessibility Settings…",
             "Launch at login",
+            "Version 0.1.0",
+            "Check for Updates…",
             "Quit Smart Quit",
         ])
     }
@@ -289,6 +293,58 @@ extension MenuModelTests {
         XCTAssertEqual(
             header?.title,
             "On the clock — checks every \(CountdownFormatter.string(for: AppSweeper.interval))"
+        )
+    }
+}
+
+// MARK: - Version and updates
+
+extension MenuModelTests {
+    func testShowsTheVersionItWasGiven() {
+        let nodes = build(version: "0.1.0")
+
+        XCTAssertTrue(nodes.contains { $0.title == "Version 0.1.0" })
+    }
+
+    /// The row is a label, not something to click.
+    func testTheVersionIsNotActionable() {
+        let node = build(version: "0.1.0").first { $0.title == "Version 0.1.0" }
+
+        XCTAssertEqual(node?.kind, .label)
+        XCTAssertEqual(node?.isEnabled, false)
+    }
+
+    /// Reading the version can fail — under xctest `Bundle.main` is the test
+    /// runner. Saying nothing beats showing "Version unknown".
+    func testOmitsTheVersionRowWhenTheVersionIsNotKnown() {
+        XCTAssertFalse(build(version: nil).contains { $0.title.hasPrefix("Version") })
+    }
+
+    func testOffersToCheckForUpdates() {
+        let node = build().first { $0.kind == .action(.checkForUpdates) }
+
+        XCTAssertEqual(node?.title, "Check for Updates…")
+        XCTAssertEqual(node?.isEnabled, true)
+    }
+
+    /// Still offered when the version is unknown: that is when someone most
+    /// wants to go and look.
+    func testOffersUpdatesEvenWithoutAVersion() {
+        XCTAssertTrue(build(version: nil).contains { $0.kind == .action(.checkForUpdates) })
+    }
+
+    func testPutsTheVersionDirectlyAboveTheUpdateCheck() throws {
+        let nodes = build(version: "0.1.0")
+        let version = try XCTUnwrap(nodes.firstIndex { $0.title == "Version 0.1.0" })
+        let updates = try XCTUnwrap(nodes.firstIndex { $0.kind == .action(.checkForUpdates) })
+
+        XCTAssertEqual(updates, version + 1)
+    }
+
+    func testReleasesURLPointsAtTheProjectsReleases() {
+        XCTAssertEqual(
+            AppInfo.releasesURL?.absoluteString,
+            "https://github.com/aswinmurali-io/smart_quit/releases"
         )
     }
 }

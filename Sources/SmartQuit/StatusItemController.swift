@@ -142,7 +142,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                 $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
             },
             isAccessibilityGranted: AccessibilityPermission.isGranted,
-            isLaunchAtLoginEnabled: LaunchAtLogin.isEnabled
+            isLaunchAtLoginEnabled: LaunchAtLogin.isEnabled,
+            version: AppInfo.version
         )
     }
 
@@ -234,6 +235,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         case .openAccessibilitySettings:
             AccessibilityPermission.openSystemSettings()
+
+        case .checkForUpdates:
+            guard let url = AppInfo.releasesURL else { return }
+            Log.ui.info("Opening the releases page")
+            NSWorkspace.shared.open(url)
 
         case .toggleLaunchAtLogin:
             reportIfLaunchAtLoginFailed(LaunchAtLogin.setEnabled(!LaunchAtLogin.isEnabled))

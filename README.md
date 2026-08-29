@@ -55,6 +55,9 @@ runtime, no background daemon.
   Open Accessibility Settings…
 ✓ Launch at login
 ──────────────────────────────
+  Version 0.1.0
+  Check for Updates…
+──────────────────────────────
   Quit Smart Quit
 ```
 

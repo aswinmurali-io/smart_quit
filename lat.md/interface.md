@@ -90,3 +90,25 @@ The frozen number would be noise: what the user needs to know is that the app is
 safe for as long as it keeps playing, not what it will resume from. Paused rows
 sort below live ones, so an app that is about to be quit is never pushed down by
 one that is going nowhere.
+
+## The version sits next to the update check
+
+The menu shows "Version 0.1.0" as a label, directly above "Check for Updates…".
+
+A version nobody can read is no use the moment someone is reporting a bug, and
+the page they would go to about it is the natural thing to put it beside.
+
+Reading the version can fail — under `xctest` `Bundle.main` is the test runner,
+not an app bundle — so `AppInfo.version` is optional and the row is omitted
+rather than showing a placeholder. The update check is offered either way: not
+knowing which version is running is exactly when someone wants to go and look.
+
+## Checking for updates opens a page
+
+"Check for Updates…" opens the project's releases page. It does not check anything.
+
+There is no updater, and adding one would mean a utility whose job is quitting
+other applications also downloading and replacing itself in the background.
+Opening the page leaves the decision, and the download, with the person.
+
+See `AppInfo` in `Sources/SmartQuitCore/AppInfo.swift`.
