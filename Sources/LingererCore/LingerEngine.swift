@@ -91,7 +91,7 @@ public final class LingerEngine {
             )
             let grace = settings.gracePeriod(forBundleID: app.bundleID)
             Log.engine.info(
-                "\(app.name, privacy: .public) became windowless — quitting in \(grace)s"
+                "\(app.name, privacy: .public) became windowless — quitting in \(Int(grace))s"
             )
             return
         }
@@ -108,7 +108,7 @@ public final class LingerEngine {
                 Log.engine.error(
                     """
                     \(app.name, privacy: .public) still running \
-                    \(Self.verificationDelay)s after quit request — giving up
+                    \(Int(Self.verificationDelay))s after quit request — giving up
                     """
                 )
                 tracked[app.pid]?.state = .surrendered
@@ -141,7 +141,7 @@ public final class LingerEngine {
 
     private func stopTracking(_ app: AppSnapshot, reason: String) {
         guard tracked[app.pid] != nil else { return }
-        Log.engine.info("\(app.name, privacy: .public) no longer pending — \(reason)")
+        Log.engine.info("\(app.name, privacy: .public) no longer pending — \(reason, privacy: .public)")
         tracked[app.pid] = nil
     }
 
