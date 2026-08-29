@@ -35,7 +35,7 @@ Smart Quit keeps the instant relaunch and drops the pile-up. Close the last
 window, walk away, and a few minutes later the app quits itself — gracefully,
 with every unsaved-changes dialog intact.
 
-It lives in the menu bar. No Dock icon, no window, no preferences pane.
+It lives in the menu bar. **No Dock icon, no window, no preferences pane.**
 
 **The built app is 1.3 MB — native Swift and AppKit, no Electron, no bundled
 runtime, no background daemon**.
