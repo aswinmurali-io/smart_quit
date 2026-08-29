@@ -152,7 +152,7 @@ log show --predicate 'subsystem == "com.smartquit.SmartQuit"' --last 1h --info -
 ```
 
 The `engine` category records apps becoming windowless, clocks being cancelled,
-quit requests, and quits that were refused.
+quit requests, quits that went through, and quits that were refused.
 
 ## Tests
 

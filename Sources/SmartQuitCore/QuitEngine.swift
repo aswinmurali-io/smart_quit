@@ -66,9 +66,17 @@ public final class QuitEngine {
             return
         }
 
-        // Drop state for apps that are no longer running.
+        // Drop state for apps that are no longer running. An app we had asked
+        // to quit and that has now gone is the confirmation that it worked —
+        // this is where a successful quit is observed, because the app is
+        // pruned here before it can reach the verification branch below.
         let live = Set(snapshots.map(\.pid))
-        tracked = tracked.filter { live.contains($0.key) }
+        for (pid, entry) in tracked where !live.contains(pid) {
+            if case .quitRequested = entry.state {
+                Log.engine.info("\(entry.name, privacy: .public) quit")
+            }
+            tracked[pid] = nil
+        }
 
         for app in snapshots {
             advance(app, now: now)
