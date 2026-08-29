@@ -7,7 +7,7 @@ final class MenuModelTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        suiteName = "dev.aswinmurali.SmartQuit.tests.\(UUID().uuidString)"
+        suiteName = "com.smartquit.SmartQuit.tests.\(UUID().uuidString)"
         settings = Settings(defaults: UserDefaults(suiteName: suiteName)!)
     }
 

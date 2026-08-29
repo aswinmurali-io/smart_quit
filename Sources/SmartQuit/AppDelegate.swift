@@ -10,7 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let selfBundleID = Bundle.main.bundleIdentifier ?? "dev.aswinmurali.SmartQuit"
+        let selfBundleID = Bundle.main.bundleIdentifier ?? "com.smartquit.SmartQuit"
 
         engine = QuitEngine(
             settings: settings,

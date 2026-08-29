@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>SmartQuit</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.aswinmurali.SmartQuit</string>
+	<string>com.smartquit.SmartQuit</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

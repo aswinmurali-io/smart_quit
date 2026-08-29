@@ -21,7 +21,7 @@ public final class AppSweeper {
     private let engine: QuitEngine
     private let now: () -> Date
     private let countingQueue = DispatchQueue(
-        label: "dev.aswinmurali.SmartQuit.window-counting",
+        label: "com.smartquit.SmartQuit.window-counting",
         qos: .utility
     )
 

@@ -142,13 +142,13 @@ point at a file that has moved.
 Every state transition is logged. To follow along live:
 
 ```bash
-log stream --predicate 'subsystem == "dev.aswinmurali.SmartQuit"' --level debug
+log stream --predicate 'subsystem == "com.smartquit.SmartQuit"' --level debug
 ```
 
 To read what already happened:
 
 ```bash
-log show --predicate 'subsystem == "dev.aswinmurali.SmartQuit"' --last 1h --info --debug
+log show --predicate 'subsystem == "com.smartquit.SmartQuit"' --last 1h --info --debug
 ```
 
 The `engine` category records apps becoming windowless, clocks being cancelled,

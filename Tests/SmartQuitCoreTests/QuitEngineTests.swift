@@ -14,7 +14,7 @@ final class QuitEngineTests: XCTestCase {
         engine = QuitEngine(
             settings: settings,
             terminator: terminator,
-            protectedBundleIDs: ["com.apple.finder", "dev.aswinmurali.SmartQuit"]
+            protectedBundleIDs: ["com.apple.finder", "com.smartquit.SmartQuit"]
         )
     }
 
@@ -119,7 +119,7 @@ final class QuitEngineTests: XCTestCase {
 
     func testNeverQuitsProtectedApp() {
         let finder = AppSnapshot.make(pid: 42, bundleID: "com.apple.finder", windowCount: 0)
-        let itself = AppSnapshot.make(pid: 43, bundleID: "dev.aswinmurali.SmartQuit", windowCount: 0)
+        let itself = AppSnapshot.make(pid: 43, bundleID: "com.smartquit.SmartQuit", windowCount: 0)
 
         engine.apply([finder, itself], now: start)
         engine.apply([finder, itself], now: start.addingTimeInterval(301))

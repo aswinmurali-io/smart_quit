@@ -7,7 +7,7 @@ final class SettingsTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        suiteName = "dev.aswinmurali.SmartQuit.tests.\(UUID().uuidString)"
+        suiteName = "com.smartquit.SmartQuit.tests.\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
     }
 
