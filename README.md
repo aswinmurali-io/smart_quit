@@ -42,10 +42,10 @@ runtime, no background daemon**.
     Preview — 2m 15s
     Notes — 4m 03s
     Spotify — paused (playing audio)
+  With windows — 2
+    Safari — 2 windows
+    Xcode — 1 window
 ──────────────────────────────
-  With windows — 5            ▸
-      Safari — 2 windows
-      Xcode — 1 window
   Grace period — 5 minutes    ▸
       1 minute
       2 minutes

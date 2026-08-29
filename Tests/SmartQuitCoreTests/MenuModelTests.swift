@@ -60,6 +60,7 @@ final class MenuModelTests: XCTestCase {
             "On the clock — checks every 3s",
             "Nothing waiting to quit",
             "With windows — 0",
+            "No apps showing windows",
             "Grace period — 5 minutes",
             "Excluded apps",
             "Open Accessibility Settings…",
@@ -421,11 +422,11 @@ extension MenuModelTests {
 // MARK: - Apps with windows
 
 extension MenuModelTests {
+    /// The rows indented under the "With windows" heading.
     private func windowed(_ nodes: [MenuNode]) -> [MenuNode] {
-        guard let node = nodes.first(where: { $0.title.hasPrefix("With windows") }),
-              case .submenu(let children) = node.kind
+        guard let start = nodes.firstIndex(where: { $0.title.hasPrefix("With windows") })
         else { return [] }
-        return children
+        return Array(nodes[(start + 1)...].prefix { $0.indent == 1 })
     }
 
     func testCountsTheAppsShowingWindows() {

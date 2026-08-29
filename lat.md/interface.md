@@ -134,14 +134,15 @@ the moment the menu needs it — asking at that point answers nothing, every tim
 instead, filtering to regular apps by the same rule `regularApps()` uses. That
 filter is what keeps Smart Quit itself from becoming the answer.
 
-## Apps with windows are a submenu
+## Apps with windows are listed inline
 
-"With windows — 5" opens onto one row per app, each with its window count.
+"With windows — 5" heads one indented row per app, each with its window count.
 
-A submenu rather than an inline list. This is usually the longest thing the menu
-knows about, where the clock above it is usually empty, and a dozen rows sitting
-between the two switches and the settings would bury both. The count is in the
-title so it reads without opening.
+Inline, matching the clock section above it. Both answer the same question —
+what is going on right now — and putting one behind a disclosure arrow made them
+read as different kinds of thing, one a status and the other a setting. The
+count stays in the heading so the size of the list is legible before the eye
+reaches it.
 
 The rows come from the last sweep, held by `AppSweeper` because nothing else
 holds it: the engine drops an app the moment it knows it is not a candidate, so
