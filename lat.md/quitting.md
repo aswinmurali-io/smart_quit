@@ -35,6 +35,11 @@ Spotify is deliberately not in the default exclusions: the pause covers it
 better than an exclusion, which would leave it running forever once the music
 stopped.
 
+The pause is a setting, on by default, and the engine reads it on every sweep
+rather than latching it into the clock. Turning it off therefore releases apps
+already being held, resuming each from the time it had served, instead of
+applying only to apps that start playing later.
+
 See `QuitEngine` in `Sources/SmartQuitCore/QuitEngine.swift`.
 
 ## State is keyed by pid

@@ -7,6 +7,7 @@ final class FakeSettings: SettingsProviding {
     var globalGracePeriod: TimeInterval = 300
     var perAppGracePeriods: [String: TimeInterval] = [:]
     var excludedBundleIDs: Set<String> = []
+    var pausesWhilePlayingAudio = true
 
     func gracePeriod(forBundleID bundleID: String) -> TimeInterval {
         perAppGracePeriods[bundleID] ?? globalGracePeriod

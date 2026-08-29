@@ -3,6 +3,7 @@ import Foundation
 /// Something the user can do from the menu.
 public enum MenuAction: Equatable {
     case toggleEnabled
+    case togglePauseWhilePlayingAudio
     case setGlobalGracePeriod(TimeInterval)
     case promptForCustomGracePeriod
     case setAppGracePeriod(bundleID: String, period: TimeInterval?)
@@ -85,6 +86,16 @@ public enum MenuModel {
                 isChecked: settings.isEnabled
             )
         )
+        // Beside the main switch rather than buried in a submenu: both decide
+        // whether an app gets quit at all, where everything below only decides
+        // when.
+        nodes.append(
+            MenuNode(
+                title: "Pause apps playing audio",
+                kind: .action(.togglePauseWhilePlayingAudio),
+                isChecked: settings.pausesWhilePlayingAudio
+            )
+        )
         nodes.append(.separator)
 
         nodes += clockSection(
@@ -125,7 +136,12 @@ public enum MenuModel {
         isEnabled: Bool,
         isAccessibilityGranted: Bool
     ) -> [MenuNode] {
-        var nodes: [MenuNode] = [.label("On the clock")]
+        // The interval comes from the sweeper rather than being written out
+        // here: an unchanged list is the normal case, and a user who cannot
+        // tell refresh rate from staleness has no way to know that.
+        var nodes: [MenuNode] = [
+            .label("On the clock — checks every \(CountdownFormatter.string(for: AppSweeper.interval))")
+        ]
 
         guard !countdowns.isEmpty else {
             // "Nothing waiting" would be a lie when we cannot see windows at all.

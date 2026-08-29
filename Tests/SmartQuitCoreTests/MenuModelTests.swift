@@ -50,7 +50,8 @@ final class MenuModelTests: XCTestCase {
 
         XCTAssertEqual(titles, [
             "Quit idle apps",
-            "On the clock",
+            "Pause apps playing audio",
+            "On the clock — checks every 15s",
             "Nothing waiting to quit",
             "Grace period — 5 minutes",
             "Excluded apps",
@@ -242,5 +243,52 @@ extension MenuModelTests {
         let nodes = build(countdowns: [countdown])
 
         XCTAssertTrue(nodes.contains { $0.title == MenuModel.countdownTitle(for: countdown) })
+    }
+}
+
+// MARK: - The audio pause toggle
+
+extension MenuModelTests {
+    func testOffersTheAudioPauseAsAToggleBesideTheMainSwitch() {
+        let nodes = build()
+        let index = nodes.firstIndex { $0.kind == .action(.togglePauseWhilePlayingAudio) }
+
+        XCTAssertEqual(index, 1)
+        XCTAssertEqual(nodes[1].title, "Pause apps playing audio")
+    }
+
+    func testChecksTheAudioPauseWhenItIsOn() {
+        settings.pausesWhilePlayingAudio = true
+
+        let node = build().first { $0.kind == .action(.togglePauseWhilePlayingAudio) }
+
+        XCTAssertEqual(node?.isChecked, true)
+    }
+
+    func testUnchecksTheAudioPauseWhenItIsOff() {
+        settings.pausesWhilePlayingAudio = false
+
+        let node = build().first { $0.kind == .action(.togglePauseWhilePlayingAudio) }
+
+        XCTAssertEqual(node?.isChecked, false)
+    }
+}
+
+// MARK: - The clock header
+
+extension MenuModelTests {
+    func testTheClockHeaderStatesHowOftenItChecks() {
+        XCTAssertTrue(build().contains { $0.title == "On the clock — checks every 15s" })
+    }
+
+    /// Derived from the sweeper's interval rather than written out, so the two
+    /// cannot drift apart.
+    func testTheClockHeaderFollowsTheSweepInterval() {
+        let header = build().first { $0.title.hasPrefix("On the clock") }
+
+        XCTAssertEqual(
+            header?.title,
+            "On the clock — checks every \(CountdownFormatter.string(for: AppSweeper.interval))"
+        )
     }
 }

@@ -10,4 +10,11 @@ public protocol SettingsProviding: AnyObject {
 
     /// Whether the user has opted this app out of automatic quitting.
     func isExcluded(bundleID: String) -> Bool
+
+    /// Whether an app playing audio has its clock held.
+    ///
+    /// On by default. Off makes audio irrelevant to the decision, which suits
+    /// someone who leaves music running all day and wants the windowless rule
+    /// applied regardless.
+    var pausesWhilePlayingAudio: Bool { get }
 }

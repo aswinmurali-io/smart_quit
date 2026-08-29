@@ -146,11 +146,11 @@ public final class QuitEngine {
                 bundleID: app.bundleID,
                 name: app.name,
                 state: .windowless(
-                    Clock(served: 0, lastSeen: now, isPaused: app.isPlayingAudio)
+                    Clock(served: 0, lastSeen: now, isPaused: isPausedByAudio(app))
                 )
             )
             let grace = settings.gracePeriod(forBundleID: app.bundleID)
-            if app.isPlayingAudio {
+            if isPausedByAudio(app) {
                 Log.engine.info(
                     "\(app.name, privacy: .public) became windowless while playing audio — paused"
                 )
@@ -166,7 +166,7 @@ public final class QuitEngine {
 
         switch state {
         case .windowless(let clock):
-            let advanced = clock.advanced(to: now, isPaused: app.isPlayingAudio)
+            let advanced = clock.advanced(to: now, isPaused: isPausedByAudio(app))
             tracked[app.pid]?.state = .windowless(advanced)
 
             // Playing audio is being used, whatever the windows say. The clock
@@ -228,6 +228,14 @@ public final class QuitEngine {
         guard tracked[app.pid] != nil else { return }
         Log.engine.info("\(app.name, privacy: .public) no longer pending — \(reason, privacy: .public)")
         tracked[app.pid] = nil
+    }
+
+    /// Whether this app's clock is held because it is playing something.
+    ///
+    /// Read from settings on every sweep rather than latched into the clock, so
+    /// turning the pause off releases apps already held by it.
+    private func isPausedByAudio(_ app: AppSnapshot) -> Bool {
+        app.isPlayingAudio && settings.pausesWhilePlayingAudio
     }
 
     private func isEligible(_ app: AppSnapshot) -> Bool {

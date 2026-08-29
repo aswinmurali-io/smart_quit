@@ -402,3 +402,45 @@ extension QuitEngineTests {
         XCTAssertNil(engine.windowlessStart(forPID: 42))
     }
 }
+
+// MARK: - The audio pause can be turned off
+
+extension QuitEngineTests {
+    func testQuitsAnAppPlayingAudioWhenThePauseIsTurnedOff() {
+        settings.pausesWhilePlayingAudio = false
+
+        engine.apply([playing], now: start)
+        engine.apply([playing], now: start.addingTimeInterval(301))
+
+        XCTAssertEqual(terminator.terminated, [42])
+    }
+
+    /// Turning the pause off resumes a held clock where it stopped rather than
+    /// discarding the time already served.
+    func testTurningThePauseOffResumesAHeldClock() throws {
+        engine.apply([silent], now: start)
+        engine.apply([playing], now: start.addingTimeInterval(100))
+        engine.apply([playing], now: start.addingTimeInterval(5000))
+
+        settings.pausesWhilePlayingAudio = false
+        engine.apply([playing], now: start.addingTimeInterval(5000))
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(5000)).first)
+
+        XCTAssertFalse(countdown.isPaused)
+        XCTAssertEqual(countdown.remaining, 200, accuracy: 0.001)
+    }
+
+    func testTurningThePauseBackOnHoldsTheClockAgain() throws {
+        settings.pausesWhilePlayingAudio = false
+        engine.apply([playing], now: start)
+
+        settings.pausesWhilePlayingAudio = true
+        engine.apply([playing], now: start.addingTimeInterval(100))
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(200)).first)
+
+        XCTAssertTrue(countdown.isPaused)
+        XCTAssertEqual(countdown.remaining, 200, accuracy: 0.001)
+    }
+}

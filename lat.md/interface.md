@@ -22,6 +22,22 @@ Without that permission SmartQuit cannot see windows, so nothing else in the men
 has any effect. Settings the user cannot act on should not sit above the reason
 they cannot act on them.
 
+## The two switches sit together
+
+"Quit idle apps" and "Pause apps playing audio" are both top-level rows, above the first separator.
+
+Everything below them decides *when* an app is quit; these two decide *whether*
+it is quit at all. Putting the audio pause in a submenu beside the grace periods
+would file it with the timing settings it is not one of.
+
+## The clock header states its refresh rate
+
+The section header reads "On the clock — checks every 15s".
+
+An unchanged list is the normal case, and nothing else in the menu distinguishes
+"nothing has changed" from "this stopped updating". The interval comes from
+`AppSweeper.interval` rather than being written out, so the two cannot drift.
+
 ## The empty state tells the truth
 
 With no apps on the clock the menu says "Nothing waiting to quit"; without

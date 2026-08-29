@@ -168,6 +168,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             sweep()
             refreshIcon()
 
+        case .togglePauseWhilePlayingAudio:
+            settings.pausesWhilePlayingAudio.toggle()
+            Log.ui.info("Audio pause set to \(self.settings.pausesWhilePlayingAudio)")
+            sweep()
+            refreshIcon()
+
         case .setGlobalGracePeriod(let period):
             settings.globalGracePeriod = period
             Log.ui.info("Grace period set to \(Int(period))s")

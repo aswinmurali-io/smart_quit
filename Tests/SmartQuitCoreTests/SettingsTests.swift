@@ -133,3 +133,17 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(settings.gracePeriod(forBundleID: "com.example.Bad"), 300)
     }
 }
+
+// MARK: - The audio pause
+
+extension SettingsTests {
+    func testPausesWhilePlayingAudioByDefault() {
+        XCTAssertTrue(Settings(defaults: defaults).pausesWhilePlayingAudio)
+    }
+
+    func testPersistsTheAudioPauseSetting() {
+        Settings(defaults: defaults).pausesWhilePlayingAudio = false
+
+        XCTAssertFalse(Settings(defaults: defaults).pausesWhilePlayingAudio)
+    }
+}

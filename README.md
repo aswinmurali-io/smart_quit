@@ -28,8 +28,9 @@ It lives in the menu bar. No Dock icon, no window, no preferences pane.
 
 ```
 ✓ Quit idle apps
+✓ Pause apps playing audio
 ──────────────────────────────
-  On the clock
+  On the clock — checks every 15s
     Preview — 2m 15s
     Notes — 4m 03s
     Spotify — paused (playing audio)
@@ -98,7 +99,7 @@ dialog every 15 seconds, forever.
 | **Apps it couldn't inspect** | An unreadable window count is *unknown*, never *zero*. Without that distinction, a hung app — or a revoked permission — reads as windowless and gets quit. |
 | **Minimized or hidden apps** | Both still count as having windows. A minimized window is work in progress. |
 | **Finder, menu bar utilities, background agents** | Windowless by design. Only regular, Dock-visible apps are eligible. |
-| **Anything playing audio** | Its clock pauses for as long as the sound lasts — including audio coming from a helper process, so a browser tab or an Electron app counts too. |
+| **Anything playing audio** | Its clock pauses for as long as the sound lasts — including audio coming from a helper process, so a browser tab or an Electron app counts too. Turn it off with *Pause apps playing audio* and every held clock resumes from where it stopped. |
 | **Your exclude list** | Music, Mail, Messages, Calendar, Activity Monitor, Terminal and iTerm are excluded out of the box. Toggle any running app from the menu. |
 
 ## Install
