@@ -41,6 +41,18 @@ runtime, no background daemon**.
 The hourglass icon fills as apps go on the clock, and dims when you pause it.
 Countdowns tick live while the menu is open.
 
+## Download
+
+Needs macOS 14.2 Sonoma or later.
+
+**[Get the latest `.dmg`](https://github.com/aswinmurali-io/smart_quit/releases/latest)**
+— signed with a Developer ID certificate and notarised by Apple, so it opens
+without a Gatekeeper warning. Drag *Smart Quit* to Applications, launch it, and
+look for the hourglass in the menu bar.
+
+Then [grant Accessibility permission](#grant-accessibility-permission) — the app
+does nothing until you do.
+
 ## How it decides
 
 ```mermaid
@@ -87,16 +99,8 @@ dialog every few seconds, forever.
 
 ## Install
 
-Needs macOS 14.2 Sonoma or later.
-
-### Download
-
-**[Get the latest `.dmg`](https://github.com/aswinmurali-io/smart_quit/releases/latest)**
-— signed with a Developer ID certificate and notarised by Apple, so it opens
-without a Gatekeeper warning. Drag *Smart Quit* to Applications, launch it, and
-look for the hourglass in the menu bar.
-
-Then grant Accessibility permission below — the app does nothing until you do.
+Everything past the download: building it yourself, the permission it needs, and
+where to keep it.
 
 ### Build from source
 
