@@ -8,6 +8,7 @@ public final class Settings: SettingsProviding {
         static let excludedBundleIDs = "excludedBundleIDs"
         static let gracePeriodOverrides = "gracePeriodOverrides"
         static let hasSeededExclusions = "hasSeededExclusions"
+        static let pausesWhilePlayingAudio = "pausesWhilePlayingAudio"
     }
 
     /// Grace period offered in the menu, in seconds.
@@ -22,6 +23,7 @@ public final class Settings: SettingsProviding {
         defaults.register(defaults: [
             Key.isEnabled: true,
             Key.globalGracePeriod: Self.defaultGracePeriod,
+            Key.pausesWhilePlayingAudio: true,
         ])
         seedExclusionsIfNeeded()
     }
@@ -53,6 +55,12 @@ public final class Settings: SettingsProviding {
             guard newValue > 0 else { return }
             defaults.set(newValue, forKey: Key.globalGracePeriod)
         }
+    }
+
+    /// Whether an app playing audio has its clock held.
+    public var pausesWhilePlayingAudio: Bool {
+        get { defaults.bool(forKey: Key.pausesWhilePlayingAudio) }
+        set { defaults.set(newValue, forKey: Key.pausesWhilePlayingAudio) }
     }
 
     // MARK: - Exclusions

@@ -7,6 +7,7 @@ final class FakeSettings: SettingsProviding {
     var globalGracePeriod: TimeInterval = 300
     var perAppGracePeriods: [String: TimeInterval] = [:]
     var excludedBundleIDs: Set<String> = []
+    var pausesWhilePlayingAudio = true
 
     func gracePeriod(forBundleID bundleID: String) -> TimeInterval {
         perAppGracePeriods[bundleID] ?? globalGracePeriod
@@ -42,14 +43,16 @@ extension AppSnapshot {
         bundleID: String = "com.example.App",
         name: String = "App",
         isFrontmost: Bool = false,
-        windowCount: Int? = 0
+        windowCount: Int? = 0,
+        isPlayingAudio: Bool = false
     ) -> AppSnapshot {
         AppSnapshot(
             pid: pid,
             bundleID: bundleID,
             name: name,
             isFrontmost: isFrontmost,
-            windowCount: windowCount
+            windowCount: windowCount,
+            isPlayingAudio: isPlayingAudio
         )
     }
 }
@@ -86,4 +89,18 @@ extension RunningApp {
     ) -> RunningApp {
         RunningApp(pid: pid, bundleID: bundleID, name: name, isFrontmost: isFrontmost)
     }
+}
+
+/// Audio activity under full test control.
+final class FakeAudioActivityDetector: AudioActivityDetecting {
+    var playing: Set<pid_t> = []
+
+    func pidsPlayingAudio() -> Set<pid_t> { playing }
+}
+
+/// A canned process tree. A pid with no entry has no parent.
+final class FakeProcessAncestry: ProcessAncestry {
+    var parents: [pid_t: pid_t] = [:]
+
+    func parent(of pid: pid_t) -> pid_t? { parents[pid] }
 }

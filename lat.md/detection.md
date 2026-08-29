@@ -1,6 +1,6 @@
 # Detection
 
-How SmartQuit decides how many windows an app has, and which apps it is willing to consider at all.
+How Smart Quit decides how many windows an app has, whether it is playing anything, and which apps it is willing to consider at all.
 
 ## Accessibility over CGWindowList
 
@@ -9,7 +9,7 @@ Window counts come from the Accessibility API, not `CGWindowList`.
 `CGWindowList` reports every surface the window server knows about, including
 off-screen buffers, shadows, and helper windows belonging to frameworks. An app
 with no visible windows routinely still has entries there, so counting them
-produces false negatives — SmartQuit would conclude an app still has windows and
+produces false negatives — Smart Quit would conclude an app still has windows and
 never quit it.
 
 `AXUIElementCopyAttributeValue(app, kAXWindowsAttribute)` returns the windows an
@@ -40,7 +40,7 @@ and quitting the app would be a surprise.
 A window count is `Int?`. `nil` means the count could not be determined.
 
 An Accessibility query fails when the app is unresponsive, when it has not
-finished launching, or when SmartQuit's Accessibility permission has been
+finished launching, or when Smart Quit's Accessibility permission has been
 revoked. Reporting `0` in those cases would make every such app a quit
 candidate — a revoked permission would quit the user's entire session.
 
@@ -78,3 +78,43 @@ wrong. Apps without a bundle identifier are also skipped, since exclusions are
 keyed by bundle identifier and an app without one cannot be excluded.
 
 See `WorkspaceAppsProvider` in `Sources/SmartQuitCore/WorkspaceAppsProvider.swift`.
+
+## Audio comes from CoreAudio process objects
+
+Whether an app is playing something is read from CoreAudio's per-process view,
+not from the now-playing info or a power assertion.
+
+`kAudioHardwarePropertyProcessObjectList` lists every process that has opened
+the audio HAL, and each one answers `kAudioProcessPropertyIsRunningOutput` for
+whether it is rendering output at this instant. A process that has stopped stays
+in the list reporting false, so silence is reported rather than inferred.
+
+The alternatives are worse. The now-playing information lives in the private
+MediaRemote framework, which cannot ship. Parsing `pmset -g assertions` reports
+apps that merely want to keep the machine awake, which is not the same question.
+
+No permission is required — output activity is not treated as private the way
+microphone input is. This matters, because it means the audio half of a sweep
+still works when the Accessibility permission has been revoked.
+
+Available from macOS 14.2, which is why that is the deployment target.
+
+See `CoreAudioActivityDetector` in
+`Sources/SmartQuitCore/CoreAudioActivityDetector.swift`.
+
+## Audio is attributed up the process tree
+
+An emitting process is walked up its parent chain until it reaches a running
+application.
+
+CoreAudio reports the process that opened the HAL, which for a browser or any
+Electron app is a helper, not the app itself. Safari's audio comes from a
+WebKit GPU process and Chrome's from a renderer two levels down, so matching pids
+directly would pause neither. Parents come from `sysctl(KERN_PROC_PID)`, the only
+public way to ask who launched a process.
+
+The walk stops at the first ancestor that is a tracked application, at pid 1, or
+after eight hops. The hop limit is what makes a cyclic or corrupt parent chain
+harmless — there is no cycle detection beyond it.
+
+See `AudioAttribution` in `Sources/SmartQuitCore/AudioActivity.swift`.

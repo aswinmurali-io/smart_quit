@@ -3,6 +3,7 @@ import Foundation
 /// Something the user can do from the menu.
 public enum MenuAction: Equatable {
     case toggleEnabled
+    case togglePauseWhilePlayingAudio
     case setGlobalGracePeriod(TimeInterval)
     case promptForCustomGracePeriod
     case setAppGracePeriod(bundleID: String, period: TimeInterval?)
@@ -85,6 +86,16 @@ public enum MenuModel {
                 isChecked: settings.isEnabled
             )
         )
+        // Beside the main switch rather than buried in a submenu: both decide
+        // whether an app gets quit at all, where everything below only decides
+        // when.
+        nodes.append(
+            MenuNode(
+                title: "Pause apps playing audio",
+                kind: .action(.togglePauseWhilePlayingAudio),
+                isChecked: settings.pausesWhilePlayingAudio
+            )
+        )
         nodes.append(.separator)
 
         nodes += clockSection(
@@ -113,7 +124,7 @@ public enum MenuModel {
             )
         )
         nodes.append(.separator)
-        nodes.append(MenuNode(title: "Quit SmartQuit", kind: .action(.quit)))
+        nodes.append(MenuNode(title: "Quit Smart Quit", kind: .action(.quit)))
 
         return nodes
     }
@@ -125,7 +136,12 @@ public enum MenuModel {
         isEnabled: Bool,
         isAccessibilityGranted: Bool
     ) -> [MenuNode] {
-        var nodes: [MenuNode] = [.label("On the clock")]
+        // The interval comes from the sweeper rather than being written out
+        // here: an unchanged list is the normal case, and a user who cannot
+        // tell refresh rate from staleness has no way to know that.
+        var nodes: [MenuNode] = [
+            .label("On the clock — checks every \(CountdownFormatter.string(for: AppSweeper.interval))")
+        ]
 
         guard !countdowns.isEmpty else {
             // "Nothing waiting" would be a lie when we cannot see windows at all.
@@ -143,13 +159,24 @@ public enum MenuModel {
 
         nodes += countdowns.map {
             MenuNode(
-                title: "\($0.name) — \(CountdownFormatter.string(for: $0.remaining))",
+                title: countdownTitle(for: $0),
                 kind: .countdown(bundleID: $0.bundleID),
                 isEnabled: false,
                 indent: 1
             )
         }
         return nodes
+    }
+
+    /// The label for one countdown row.
+    ///
+    /// Public because the status item ticks these rows in place while the menu
+    /// is open, and has to write the same text the menu was built with.
+    public static func countdownTitle(for countdown: Countdown) -> String {
+        // The frozen number is not worth showing: what the user needs to know
+        // is that the app is safe for as long as it keeps playing.
+        guard !countdown.isPaused else { return "\(countdown.name) — paused (playing audio)" }
+        return "\(countdown.name) — \(CountdownFormatter.string(for: countdown.remaining))"
     }
 
     private static func gracePeriodMenu(settings: Settings, apps: [RunningApp]) -> MenuNode {

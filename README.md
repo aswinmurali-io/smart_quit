@@ -1,95 +1,179 @@
-# SmartQuit
+<h1 align="center">Smart Quit</h1>
 
-A macOS menu bar utility that quits apps you've stopped using.
+<p align="center">
+  <strong>Your Mac keeps apps running after you close their last window.</strong><br>
+  That's a feature — right up until it's thirty of them.
+</p>
 
-Closing the last window of a Mac app doesn't quit it — the app lingers in the
-background, ready for a fast relaunch. That behaviour is genuinely useful, and
-also how you end up with thirty windowless apps holding memory at the end of a
-workday.
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-14.2%2B-000000?logo=apple&logoColor=white" alt="macOS 14.2+">
+  <img src="https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white" alt="Swift 5.9">
+  <img src="https://img.shields.io/badge/AppKit-menu%20bar-1575F9" alt="AppKit menu bar">
+  <img src="https://img.shields.io/badge/licence-Apache%202.0-blue" alt="Apache 2.0">
+</p>
 
-SmartQuit keeps the fast-relaunch behaviour and removes the pile-up. When an app
-has had zero open windows for longer than a grace period (5 minutes by default),
-SmartQuit quits it gracefully.
+---
 
-## Behaviour
+Closing a window on macOS doesn't quit the app. It lingers in the background,
+ready for an instant relaunch — which is genuinely useful, and also how you end
+up at 6pm with two dozen windowless apps quietly holding memory.
 
-- **Windowless means windowless.** Minimized and hidden windows still count as
-  windows. An app is only a candidate once it genuinely has no standard windows.
-- **Graceful only.** Quitting goes through `NSRunningApplication.terminate()`,
-  so unsaved-changes dialogs appear and nothing is lost. SmartQuit never sends
-  `SIGKILL`.
-- **The window you reopen cancels the clock.** If a window reappears before the
-  grace period elapses, the pending quit is cancelled.
-- **Conservative about what it touches.** Only regular (Dock-visible) apps are
-  eligible. Finder, the frontmost app, background agents, menu bar utilities and
-  anything on your exclude list are never quit.
+Smart Quit keeps the instant relaunch and drops the pile-up. Close the last
+window, walk away, and a few minutes later the app quits itself — gracefully,
+with every unsaved-changes dialog intact.
 
-## Requirements
+It lives in the menu bar. No Dock icon, no window, no preferences pane.
 
-- macOS 13 Ventura or later
-- Xcode command line tools (Swift 5.9 or later)
-- Accessibility permission (SmartQuit reads window counts via the Accessibility
-  API; it cannot see window contents)
+## What it looks like
 
-## Build and run
+```
+✓ Quit idle apps
+✓ Pause apps playing audio
+──────────────────────────────
+  On the clock — checks every 15s
+    Preview — 2m 15s
+    Notes — 4m 03s
+    Spotify — paused (playing audio)
+──────────────────────────────
+  Grace period — 5 minutes    ▸
+      1 minute
+      2 minutes
+    ✓ 5 minutes
+      10 minutes
+      30 minutes
+      Custom…
+      ────────────────────────
+      Per-app grace periods   ▸
+  Excluded apps               ▸
+      Preview
+      Spotify
+    ✓ Notes
+──────────────────────────────
+  Open Accessibility Settings…
+✓ Launch at login
+──────────────────────────────
+  Quit Smart Quit
+```
 
-SmartQuit is a Swift package. There is no `.xcodeproj`: the logic lives in a
-library target so it can be unit tested, and a script assembles the `.app`
-bundle a menu bar app needs.
+The hourglass icon fills as apps go on the clock, and dims when you pause it.
+Countdowns tick live while the menu is open.
+
+## How it decides
+
+```mermaid
+stateDiagram-v2
+    state "Watching" as W
+    state "On the clock" as C
+    state "Quit requested" as Q
+    state "Left alone" as L
+    state "Paused" as P
+
+    [*] --> W
+    W --> C: last window closes
+    C --> W: a window reappears
+    C --> P: starts playing audio
+    P --> C: audio stops
+    P --> W: a window reappears
+    C --> Q: grace period elapses
+    Q --> [*]: app quits
+    Q --> L: refuses, or still up after 10s
+    L --> W: a window reappears
+```
+
+One timer sweeps every app every 15 seconds — not a timer per app.
+
+**Paused** holds the clock rather than resetting it. Close Spotify's window
+mid-album and it stops counting down; when the music ends it resumes from the
+time it had left, not from the top.
+
+An app that refuses to quit lands in **Left alone** and is never asked again
+until it shows a window. Otherwise an app holding unsaved work would get a save
+dialog every 15 seconds, forever.
+
+## What it will never quit
+
+| | Why |
+|---|---|
+| **The app you're looking at** | Its clock keeps running, so it goes the moment you switch away — but never while it's in front of you. |
+| **Anything with unsaved work** | Quitting is `terminate()`, never `terminate(force:)`. The app shows its save dialog and refuses. That's the correct outcome, not a failure. |
+| **Apps it couldn't inspect** | An unreadable window count is *unknown*, never *zero*. Without that distinction, a hung app — or a revoked permission — reads as windowless and gets quit. |
+| **Minimized or hidden apps** | Both still count as having windows. A minimized window is work in progress. |
+| **Finder, menu bar utilities, background agents** | Windowless by design. Only regular, Dock-visible apps are eligible. |
+| **Anything playing audio** | Its clock pauses for as long as the sound lasts — including audio coming from a helper process, so a browser tab or an Electron app counts too. Turn it off with *Pause apps playing audio* and every held clock resumes from where it stopped. |
+| **Your exclude list** | Music, Mail, Messages, Calendar, Activity Monitor, Terminal and iTerm are excluded out of the box. Toggle any running app from the menu. |
+
+## Install
+
+Needs macOS 14.2 Sonoma or later and the Xcode command line tools.
 
 ```bash
 ./Scripts/build-app.sh
 ```
 
-That builds `dist/SmartQuit.app` and ad-hoc signs it. Install and launch it:
+That builds `dist/Smart Quit.app`, signing it with the first codesigning
+certificate matching your Apple ID. Then:
 
 ```bash
-cp -R dist/SmartQuit.app ~/Applications/ && open ~/Applications/SmartQuit.app
+cp -R "dist/Smart Quit.app" ~/Applications/ && open ~/Applications/"Smart Quit.app"
 ```
 
-SmartQuit has no Dock icon and no window. Look for the hourglass in the menu bar.
+Look for the hourglass in the menu bar.
+
+> **Why no `.xcodeproj`?** Smart Quit is a Swift package: the logic lives in a
+> library target so `swift test` runs against it directly, and a script
+> assembles the `.app` bundle a menu bar app needs. No unmergeable project XML.
 
 ### Grant Accessibility permission
 
-On first launch macOS asks for Accessibility permission. SmartQuit cannot count
-windows without it, and will sit there doing nothing until it is granted.
+**Smart Quit does nothing until you grant this.** It reads window counts through
+the Accessibility API — it cannot see window contents, only how many windows
+each app has.
 
-If you miss the prompt, open **System Settings → Privacy & Security →
-Accessibility**, then add and enable SmartQuit. The menu's *Open Accessibility
-Settings…* item takes you straight there.
+macOS asks on first launch. If you miss the prompt, open **System Settings →
+Privacy & Security → Accessibility** and enable Smart Quit; the menu's *Open
+Accessibility Settings…* item takes you straight there.
 
-Because the app is ad-hoc signed, its signature changes every time you rebuild
-it. macOS ties the Accessibility grant to that signature, so after a rebuild you
-may need to remove SmartQuit from the Accessibility list and add it again.
+> macOS ties the grant to the app's code signature. Signing with a real
+> certificate keeps it stable across rebuilds; an ad-hoc signature does not, and
+> a stale record has to be cleared with
+> `tccutil reset Accessibility com.smartquit.SmartQuit` before re-granting.
+>
+> Set `SMARTQUIT_SIGNING_ACCOUNT` to pick a certificate by Apple ID, or
+> `CODESIGN_IDENTITY` to name one outright.
 
 ### Gatekeeper
 
-An ad-hoc signature is not notarised, so double-clicking the app may be blocked
-the first time. Right-click `SmartQuit.app` → **Open** → **Open**, which records
-your consent. Launching from the command line with `open` avoids this entirely.
+A development certificate isn't notarised, so on another Mac double-clicking is
+blocked the first time. Right-click `Smart Quit.app` → **Open** → **Open**, or
+launch with `open` from the terminal.
+
+To hand it to someone else properly, `./Scripts/release.sh` builds a notarised,
+stapled `.dmg`. It needs a Developer ID Application certificate and a
+`notarytool` keychain profile, and says exactly what's missing if either isn't
+there.
 
 ### Launch at login
 
-The *Launch at login* toggle uses `SMAppService`, which registers the app by its
-path. Keep `SmartQuit.app` somewhere stable — `~/Applications` or
-`/Applications` — or the login item will point at a file that has moved.
+Uses `SMAppService`, which registers the app by path. Keep `Smart Quit.app`
+somewhere stable — `~/Applications` or `/Applications` — or the login item will
+point at a file that has moved.
 
-## Debug logging
+## Watching it work
 
-Every state transition is logged. To watch it live:
+Every state transition is logged. To follow along live:
 
 ```bash
-log stream --predicate 'subsystem == "dev.aswinmurali.SmartQuit"' --level debug
+log stream --predicate 'subsystem == "com.smartquit.SmartQuit"' --level debug
 ```
 
 To read what already happened:
 
 ```bash
-log show --predicate 'subsystem == "dev.aswinmurali.SmartQuit"' --last 1h --info --debug
+log show --predicate 'subsystem == "com.smartquit.SmartQuit"' --last 1h --info --debug
 ```
 
-The `engine` category records apps becoming windowless, timers being cancelled,
-quit requests, and quits that were refused.
+The `engine` category records apps becoming windowless, clocks being cancelled,
+quit requests, quits that went through, and quits that were refused.
 
 ## Tests
 
@@ -98,13 +182,20 @@ swift test
 ```
 
 The decision engine, settings, menu structure and duration formatting are
-covered directly. The engine takes time as a parameter, so the timing tests are
-exact and instant rather than sleeping.
+covered directly. The engine takes the current time as a parameter, so the
+timing tests are exact and finish in milliseconds instead of sleeping.
 
-Window counting is covered at its seams — the subrole filter and the mapping
+Window counting is covered at its seams — the subrole filter, and the mapping
 from `AXError` to "no windows" versus "unknown" — rather than against a live
 window server. The sweep's threading is covered for reentrancy and for
 re-reading the frontmost app, which is the path that can quit the wrong app.
+
+## Design notes
+
+[`lat.md/`](lat.md) records the decisions and the reasoning behind them —
+why the Accessibility API rather than `CGWindowList`, why an unknown window
+count is not zero, why state is keyed by pid, and why a refused quit is never
+retried.
 
 ## Licence
 

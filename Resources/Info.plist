@@ -6,20 +6,26 @@
 	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>SmartQuit</string>
+	<key>CFBundleDisplayName</key>
+	<string>Smart Quit</string>
+	<key>CFBundleIconFile</key>
+	<string>SmartQuit</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.aswinmurali.SmartQuit</string>
+	<string>com.smartquit.SmartQuit</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>SmartQuit</string>
+	<string>Smart Quit</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>13.0</string>
+	<string>14.2</string>
 	<!-- Menu bar only: no Dock icon, no main window. -->
 	<key>LSUIElement</key>
 	<true/>
@@ -27,7 +33,7 @@
 	     gated by the Automation privacy prompt, but if it ever is, this is
 	     the message the user sees rather than a silent failure. -->
 	<key>NSAppleEventsUsageDescription</key>
-	<string>SmartQuit asks apps that have been left without windows to quit.</string>
+	<string>Smart Quit asks apps that have been left without windows to quit.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Aswin Murali. Licensed under the Apache License 2.0.</string>
 </dict>

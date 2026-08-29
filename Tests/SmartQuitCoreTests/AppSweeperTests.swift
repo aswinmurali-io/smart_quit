@@ -106,7 +106,11 @@ extension AppSweeperTests {
 
     // MARK: Helpers
 
-    private func sweeper(terminator: SpyTerminator) -> AppSweeper {
+    private func sweeper(
+        terminator: SpyTerminator,
+        audio: AudioActivityDetecting = FakeAudioActivityDetector(),
+        ancestry: ProcessAncestry = FakeProcessAncestry()
+    ) -> AppSweeper {
         let settings = FakeSettings()
         // Zero grace: the second sweep is the one that decides.
         settings.globalGracePeriod = 0
@@ -115,7 +119,13 @@ extension AppSweeperTests {
             terminator: terminator,
             protectedBundleIDs: []
         )
-        return AppSweeper(provider: provider, counter: counter, engine: engine)
+        return AppSweeper(
+            provider: provider,
+            counter: counter,
+            audio: audio,
+            ancestry: ancestry,
+            engine: engine
+        )
     }
 
     private func sweepAndWait(_ sweeper: AppSweeper, file: StaticString = #filePath, line: UInt = #line) {
@@ -123,5 +133,53 @@ extension AppSweeperTests {
         sweeper.onSweepCompleted = { done.fulfill() }
         sweeper.sweep()
         wait(for: [done], timeout: 2)
+    }
+}
+
+// MARK: - Audio
+
+extension AppSweeperTests {
+    func testMarksAnAppThatIsPlayingAudio() {
+        provider.apps = [.make(pid: 1), .make(pid: 2)]
+
+        let snapshots = AppSweeper.snapshots(
+            for: provider.regularApps(),
+            using: counter,
+            playingAudio: [2]
+        )
+
+        XCTAssertEqual(snapshots.map(\.isPlayingAudio), [false, true])
+    }
+
+    /// Audio emitted by a helper process pauses the application that owns it.
+    func testPausesAnAppWhoseHelperProcessIsPlayingAudio() {
+        let terminator = SpyTerminator()
+        let audio = FakeAudioActivityDetector()
+        let ancestry = FakeProcessAncestry()
+        audio.playing = [99]
+        ancestry.parents = [99: 1]
+        provider.apps = [.make(pid: 1)]
+
+        let sweeper = self.sweeper(terminator: terminator, audio: audio, ancestry: ancestry)
+        sweepAndWait(sweeper)
+        sweepAndWait(sweeper)
+
+        XCTAssertEqual(terminator.terminated, [])
+    }
+
+    /// Guards the test above: with the helper silent, the app is quit.
+    func testQuitsThatSameAppWhenNoHelperIsPlaying() {
+        let terminator = SpyTerminator()
+        provider.apps = [.make(pid: 1)]
+
+        let sweeper = self.sweeper(
+            terminator: terminator,
+            audio: FakeAudioActivityDetector(),
+            ancestry: FakeProcessAncestry()
+        )
+        sweepAndWait(sweeper)
+        sweepAndWait(sweeper)
+
+        XCTAssertEqual(terminator.terminated, [1])
     }
 }

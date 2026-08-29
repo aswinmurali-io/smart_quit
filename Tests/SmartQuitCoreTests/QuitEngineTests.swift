@@ -14,7 +14,7 @@ final class QuitEngineTests: XCTestCase {
         engine = QuitEngine(
             settings: settings,
             terminator: terminator,
-            protectedBundleIDs: ["com.apple.finder", "dev.aswinmurali.SmartQuit"]
+            protectedBundleIDs: ["com.apple.finder", "com.smartquit.SmartQuit"]
         )
     }
 
@@ -119,7 +119,7 @@ final class QuitEngineTests: XCTestCase {
 
     func testNeverQuitsProtectedApp() {
         let finder = AppSnapshot.make(pid: 42, bundleID: "com.apple.finder", windowCount: 0)
-        let itself = AppSnapshot.make(pid: 43, bundleID: "dev.aswinmurali.SmartQuit", windowCount: 0)
+        let itself = AppSnapshot.make(pid: 43, bundleID: "com.smartquit.SmartQuit", windowCount: 0)
 
         engine.apply([finder, itself], now: start)
         engine.apply([finder, itself], now: start.addingTimeInterval(301))
@@ -320,5 +320,127 @@ final class QuitEngineTests: XCTestCase {
         engine.apply([app], now: start.addingTimeInterval(400))
 
         XCTAssertEqual(engine.countdowns(now: start.addingTimeInterval(400)).first?.remaining, 0)
+    }
+}
+
+// MARK: - Audio pauses the clock
+
+extension QuitEngineTests {
+    private var playing: AppSnapshot { .make(pid: 42, windowCount: 0, isPlayingAudio: true) }
+    private var silent: AppSnapshot { .make(pid: 42, windowCount: 0) }
+
+    func testDoesNotQuitAnAppThatIsPlayingAudio() {
+        engine.apply([playing], now: start)
+        engine.apply([playing], now: start.addingTimeInterval(301))
+        engine.apply([playing], now: start.addingTimeInterval(3000))
+
+        XCTAssertEqual(terminator.terminated, [])
+    }
+
+    /// The clock freezes rather than resetting: time served before the audio
+    /// started still counts once it stops.
+    func testResumesTheClockWhereItLeftOffWhenAudioStops() {
+        engine.apply([silent], now: start)
+        // 200s of the 300s grace period served, then audio starts.
+        engine.apply([playing], now: start.addingTimeInterval(200))
+        engine.apply([playing], now: start.addingTimeInterval(5000))
+        // Audio stops with 100s still to serve.
+        engine.apply([silent], now: start.addingTimeInterval(5000))
+        engine.apply([silent], now: start.addingTimeInterval(5099))
+
+        XCTAssertEqual(terminator.terminated, [])
+
+        engine.apply([silent], now: start.addingTimeInterval(5101))
+
+        XCTAssertEqual(terminator.terminated, [42])
+    }
+
+    func testReportsAPausedCountdownWhileAudioPlays() throws {
+        engine.apply([silent], now: start)
+        engine.apply([playing], now: start.addingTimeInterval(100))
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(100)).first)
+
+        XCTAssertTrue(countdown.isPaused)
+        XCTAssertEqual(countdown.remaining, 200, accuracy: 0.001)
+    }
+
+    /// The menu ticks between sweeps. A paused countdown must not tick.
+    func testAPausedCountdownDoesNotTickBetweenSweeps() throws {
+        engine.apply([silent], now: start)
+        engine.apply([playing], now: start.addingTimeInterval(100))
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(160)).first)
+
+        XCTAssertEqual(countdown.remaining, 200, accuracy: 0.001)
+    }
+
+    func testAnUnpausedCountdownStillTicksBetweenSweeps() throws {
+        engine.apply([silent], now: start)
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(60)).first)
+
+        XCTAssertFalse(countdown.isPaused)
+        XCTAssertEqual(countdown.remaining, 240, accuracy: 0.001)
+    }
+
+    /// An app already playing audio when it goes windowless starts on the
+    /// clock, but paused — the menu should say so rather than hide it.
+    func testAnAppWindowlessAndAlreadyPlayingStartsPaused() throws {
+        engine.apply([playing], now: start)
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start).first)
+
+        XCTAssertTrue(countdown.isPaused)
+        XCTAssertEqual(countdown.remaining, 300, accuracy: 0.001)
+    }
+
+    func testAWindowReappearingClearsAPausedClock() {
+        engine.apply([playing], now: start)
+        engine.apply([.make(pid: 42, windowCount: 1, isPlayingAudio: true)], now: start.addingTimeInterval(10))
+
+        XCTAssertNil(engine.windowlessStart(forPID: 42))
+    }
+}
+
+// MARK: - The audio pause can be turned off
+
+extension QuitEngineTests {
+    func testQuitsAnAppPlayingAudioWhenThePauseIsTurnedOff() {
+        settings.pausesWhilePlayingAudio = false
+
+        engine.apply([playing], now: start)
+        engine.apply([playing], now: start.addingTimeInterval(301))
+
+        XCTAssertEqual(terminator.terminated, [42])
+    }
+
+    /// Turning the pause off resumes a held clock where it stopped rather than
+    /// discarding the time already served.
+    func testTurningThePauseOffResumesAHeldClock() throws {
+        engine.apply([silent], now: start)
+        engine.apply([playing], now: start.addingTimeInterval(100))
+        engine.apply([playing], now: start.addingTimeInterval(5000))
+
+        settings.pausesWhilePlayingAudio = false
+        engine.apply([playing], now: start.addingTimeInterval(5000))
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(5000)).first)
+
+        XCTAssertFalse(countdown.isPaused)
+        XCTAssertEqual(countdown.remaining, 200, accuracy: 0.001)
+    }
+
+    func testTurningThePauseBackOnHoldsTheClockAgain() throws {
+        settings.pausesWhilePlayingAudio = false
+        engine.apply([playing], now: start)
+
+        settings.pausesWhilePlayingAudio = true
+        engine.apply([playing], now: start.addingTimeInterval(100))
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(200)).first)
+
+        XCTAssertTrue(countdown.isPaused)
+        XCTAssertEqual(countdown.remaining, 200, accuracy: 0.001)
     }
 }

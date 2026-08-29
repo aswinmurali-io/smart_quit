@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "SmartQuit",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS("14.2")],
     targets: [
         .target(name: "SmartQuitCore"),
         .executableTarget(name: "SmartQuit", dependencies: ["SmartQuitCore"]),

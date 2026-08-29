@@ -17,12 +17,26 @@ public struct AppSnapshot: Equatable {
     /// we could not inspect is never a candidate for quitting.
     public let windowCount: Int?
 
-    public init(pid: pid_t, bundleID: String, name: String, isFrontmost: Bool, windowCount: Int?) {
+    /// Whether the app, or a helper process it owns, is playing audio.
+    ///
+    /// A windowless app that is playing something is still in use, so its
+    /// clock is held rather than allowed to run out.
+    public let isPlayingAudio: Bool
+
+    public init(
+        pid: pid_t,
+        bundleID: String,
+        name: String,
+        isFrontmost: Bool,
+        windowCount: Int?,
+        isPlayingAudio: Bool = false
+    ) {
         self.pid = pid
         self.bundleID = bundleID
         self.name = name
         self.isFrontmost = isFrontmost
         self.windowCount = windowCount
+        self.isPlayingAudio = isPlayingAudio
     }
 }
 
@@ -34,18 +48,20 @@ extension AppSnapshot {
             bundleID: bundleID,
             name: name,
             isFrontmost: isFrontmost,
-            windowCount: windowCount
+            windowCount: windowCount,
+            isPlayingAudio: isPlayingAudio
         )
     }
 
-    /// Combines a running app with the number of windows it was found to have.
-    public init(_ app: RunningApp, windowCount: Int?) {
+    /// Combines a running app with what the sweep found out about it.
+    public init(_ app: RunningApp, windowCount: Int?, isPlayingAudio: Bool = false) {
         self.init(
             pid: app.pid,
             bundleID: app.bundleID,
             name: app.name,
             isFrontmost: app.isFrontmost,
-            windowCount: windowCount
+            windowCount: windowCount,
+            isPlayingAudio: isPlayingAudio
         )
     }
 }
