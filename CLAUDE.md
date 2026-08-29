@@ -105,3 +105,21 @@ Details about this child topic.
 
 The second example is invalid because `Bad Section` has no leading paragraph. `lat check` validates this rule and reports errors for missing or overly long leading paragraphs.
 %% lat:end %%
+
+# The download link
+
+The README points people at the `.dmg` in two places: the download button under
+the badges at the top, and the `## Download` section below the screenshot.
+
+Both use the version-agnostic redirect:
+
+```
+https://github.com/aswinmurali-io/smart_quit/releases/latest
+```
+
+GitHub resolves that to whatever the newest release is, so cutting a release
+with `./Scripts/release.sh` needs no README edit. Keep it that way — do not pin
+a version into the URL, or every release turns into a documentation change that
+is easy to forget. If the URL ever does have to change, change it in both
+places; a button pointing somewhere different from the section below it is
+worse than either alone.

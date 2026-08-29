@@ -17,6 +17,14 @@
   <img src="https://img.shields.io/badge/licence-Apache%202.0-blue" alt="Apache 2.0">
 </p>
 
+<p align="center">
+  <a href="https://github.com/aswinmurali-io/smart_quit/releases/latest"><img src="https://img.shields.io/badge/Download-.dmg%20for%20macOS-1575F9?style=for-the-badge&logo=apple&logoColor=white" alt="Download the latest .dmg for macOS"></a>
+</p>
+
+<p align="center">
+  <sub>Notarised by Apple · macOS 14.2 Sonoma or later · 1.3 MB</sub>
+</p>
+
 ---
 
 Closing a window on macOS doesn't quit the app. It lingers in the background,
