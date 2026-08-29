@@ -138,9 +138,15 @@ public enum MenuModel {
     ) -> [MenuNode] {
         // The interval comes from the sweeper rather than being written out
         // here: an unchanged list is the normal case, and a user who cannot
-        // tell refresh rate from staleness has no way to know that.
+        // tell refresh rate from staleness has no way to know that. Opening the
+        // menu also sweeps, which is worth saying — it makes the list something
+        // the user can refresh rather than only wait on.
         var nodes: [MenuNode] = [
-            .label("On the clock — checks every \(CountdownFormatter.string(for: AppSweeper.interval))")
+            .label(
+                "On the clock — checks every "
+                    + "\(CountdownFormatter.string(for: AppSweeper.interval)), "
+                    + "and when you open this menu"
+            )
         ]
 
         guard !countdowns.isEmpty else {

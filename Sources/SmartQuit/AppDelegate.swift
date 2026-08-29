@@ -32,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         sweeper.onSweepCompleted = { [weak self] in
-            self?.statusItem.refreshIcon()
+            self?.statusItem.sweepCompleted()
         }
 
         observeAppTermination()

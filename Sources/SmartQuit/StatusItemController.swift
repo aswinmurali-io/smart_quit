@@ -21,6 +21,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private var countdownItems: [String: NSMenuItem] = [:]
     private var tickTimer: Timer?
 
+    /// Whether the menu is on screen, so a finished sweep knows whether there
+    /// is anything to update.
+    private var isMenuOpen = false
+
+    /// The countdown rows as last rendered. A sweep that leaves this unchanged
+    /// must not rebuild the menu, or an open submenu collapses under the user.
+    private var renderedCountdownIDs: [String] = []
+
     init(
         settings: Settings,
         engine: QuitEngine,
@@ -77,9 +85,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         for node in currentMenuNodes() {
             menu.addItem(render(node))
         }
+        renderedCountdownIDs = engine.countdowns(now: Date()).map(\.bundleID)
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        isMenuOpen = true
+        // Sweep on open so the list reflects now rather than up to one interval
+        // ago. The sweep runs on its own and lands while the menu is up;
+        // sweepCompleted() folds the result in.
+        sweep()
+
         tickTimer?.invalidate()
         // Menu tracking runs in its own run loop mode, which .common covers.
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
@@ -90,9 +105,26 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     func menuDidClose(_ menu: NSMenu) {
+        isMenuOpen = false
         tickTimer?.invalidate()
         tickTimer = nil
         countdownItems.removeAll()
+        renderedCountdownIDs = []
+    }
+
+    /// Folds a finished sweep into what is on screen.
+    ///
+    /// The countdown labels tick on their own timer, so only a change to which
+    /// apps are listed needs a rebuild — and a rebuild is what closes an open
+    /// submenu, so it is worth avoiding when nothing moved.
+    func sweepCompleted() {
+        refreshIcon()
+
+        guard isMenuOpen, let menu = statusItem.menu else { return }
+        let current = engine.countdowns(now: Date()).map(\.bundleID)
+        guard current != renderedCountdownIDs else { return }
+
+        menuNeedsUpdate(menu)
     }
 
     private func tickCountdowns() {

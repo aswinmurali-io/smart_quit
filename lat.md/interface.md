@@ -30,13 +30,24 @@ Everything below them decides *when* an app is quit; these two decide *whether*
 it is quit at all. Putting the audio pause in a submenu beside the grace periods
 would file it with the timing settings it is not one of.
 
-## The clock header states its refresh rate
+## Opening the menu sweeps
 
-The section header reads "On the clock — checks every 15s".
+The header reads "On the clock — checks every 15s, and when you open this menu", and both halves are true.
 
 An unchanged list is the normal case, and nothing else in the menu distinguishes
 "nothing has changed" from "this stopped updating". The interval comes from
 `AppSweeper.interval` rather than being written out, so the two cannot drift.
+
+Waiting on the timer alone meant the list could be a full interval behind at the
+moment someone looked at it. `menuWillOpen` now starts a sweep, so opening the
+menu is a refresh rather than a read of whatever the last one left.
+
+That sweep finishes while the menu is on screen, and folding its result in is
+where the care goes. Countdown labels already tick on their own timer, so a
+rebuild is needed only when the set of listed apps changes — and a rebuild is
+exactly what collapses a submenu the user is reading. `sweepCompleted()`
+compares the countdown identities against what is rendered and rebuilds only on
+a real change.
 
 ## The empty state tells the truth
 
