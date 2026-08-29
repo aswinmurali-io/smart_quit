@@ -444,3 +444,37 @@ extension QuitEngineTests {
         XCTAssertEqual(countdown.remaining, 200, accuracy: 0.001)
     }
 }
+
+// MARK: - Reporting the frontmost app
+
+extension QuitEngineTests {
+    func testReportsACountdownAsFrontmost() throws {
+        engine.apply([.make(pid: 42, isFrontmost: true, windowCount: 0)], now: start)
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start).first)
+
+        XCTAssertTrue(countdown.isFrontmost)
+    }
+
+    func testReportsACountdownAsNotFrontmost() throws {
+        engine.apply([.make(pid: 42, windowCount: 0)], now: start)
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start).first)
+
+        XCTAssertFalse(countdown.isFrontmost)
+    }
+
+    /// Focus moves while an app is on the clock, so the flag has to follow it
+    /// rather than being fixed when the clock started.
+    func testFollowsFocusWhileAnAppIsOnTheClock() throws {
+        engine.apply([.make(pid: 42, windowCount: 0)], now: start)
+        engine.apply(
+            [.make(pid: 42, isFrontmost: true, windowCount: 0)],
+            now: start.addingTimeInterval(15)
+        )
+
+        let countdown = try XCTUnwrap(engine.countdowns(now: start.addingTimeInterval(15)).first)
+
+        XCTAssertTrue(countdown.isFrontmost)
+    }
+}

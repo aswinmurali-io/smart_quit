@@ -64,7 +64,8 @@ public enum MenuModel {
         apps: [RunningApp],
         isAccessibilityGranted: Bool,
         isLaunchAtLoginEnabled: Bool,
-        version: String?
+        version: String?,
+        foregroundAppName: String?
     ) -> [MenuNode] {
         var nodes: [MenuNode] = []
 
@@ -100,6 +101,11 @@ public enum MenuModel {
         )
         nodes.append(.separator)
 
+        // Context before the list it explains: the app in front is the one
+        // exception the clock below cannot account for on its own.
+        if let foregroundAppName {
+            nodes.append(.label("In front — \(foregroundAppName)"))
+        }
         nodes += clockSection(
             countdowns: countdowns,
             isEnabled: settings.isEnabled,
@@ -192,8 +198,18 @@ public enum MenuModel {
     public static func countdownTitle(for countdown: Countdown) -> String {
         // The frozen number is not worth showing: what the user needs to know
         // is that the app is safe for as long as it keeps playing.
-        guard !countdown.isPaused else { return "\(countdown.name) — paused (playing audio)" }
-        return "\(countdown.name) — \(CountdownFormatter.string(for: countdown.remaining))"
+        let value = countdown.isPaused
+            ? "paused"
+            : CountdownFormatter.string(for: countdown.remaining)
+
+        // Both reasons an app can sit on the clock without going anywhere, in
+        // one parenthetical rather than two run together.
+        var notes: [String] = []
+        if countdown.isPaused { notes.append("playing audio") }
+        if countdown.isFrontmost { notes.append("foreground") }
+
+        guard !notes.isEmpty else { return "\(countdown.name) — \(value)" }
+        return "\(countdown.name) — \(value) (\(notes.joined(separator: ", ")))"
     }
 
     private static func gracePeriodMenu(settings: Settings, apps: [RunningApp]) -> MenuNode {

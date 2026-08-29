@@ -29,6 +29,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// must not rebuild the menu, or an open submenu collapses under the user.
     private var renderedCountdownIDs: [String] = []
 
+    /// The last application seen in front. See ``foregroundAppName(among:)``.
+    private var lastForegroundApp: String?
+
     init(
         settings: Settings,
         engine: QuitEngine,
@@ -135,16 +138,32 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func currentMenuNodes() -> [MenuNode] {
-        MenuModel.build(
+        let apps = provider.regularApps()
+
+        return MenuModel.build(
             settings: settings,
             countdowns: engine.countdowns(now: Date()),
-            apps: provider.regularApps().sorted {
+            apps: apps.sorted {
                 $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
             },
             isAccessibilityGranted: AccessibilityPermission.isGranted,
             isLaunchAtLoginEnabled: LaunchAtLogin.isEnabled,
-            version: AppInfo.version
+            version: AppInfo.version,
+            foregroundAppName: foregroundAppName(among: apps)
         )
+    }
+
+    /// The application in front, remembered across the times we cannot see one.
+    ///
+    /// Opening the menu makes Smart Quit active, and Smart Quit is an accessory
+    /// app that never appears in `regularApps()` — so the frontmost app reads as
+    /// nothing at precisely the moment someone is reading the menu. Holding the
+    /// last one seen keeps the row answering the question it was asked.
+    private func foregroundAppName(among apps: [RunningApp]) -> String? {
+        if let front = apps.first(where: \.isFrontmost) {
+            lastForegroundApp = front.name
+        }
+        return lastForegroundApp
     }
 
     // MARK: - Rendering

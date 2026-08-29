@@ -15,17 +15,25 @@ public struct Countdown: Equatable {
     /// Whether the clock is held because the app is playing audio.
     public let isPaused: Bool
 
+    /// Whether this is the app the user is currently in.
+    ///
+    /// Its clock still runs — it is simply not quit while it is in front, so a
+    /// countdown can sit at zero indefinitely without anything being wrong.
+    public let isFrontmost: Bool
+
     public init(
         pid: pid_t,
         bundleID: String,
         name: String,
         remaining: TimeInterval,
-        isPaused: Bool = false
+        isPaused: Bool = false,
+        isFrontmost: Bool = false
     ) {
         self.pid = pid
         self.bundleID = bundleID
         self.name = name
         self.remaining = remaining
         self.isPaused = isPaused
+        self.isFrontmost = isFrontmost
     }
 }

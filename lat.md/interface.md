@@ -112,3 +112,20 @@ other applications also downloading and replacing itself in the background.
 Opening the page leaves the decision, and the download, with the person.
 
 See `AppInfo` in `Sources/SmartQuitCore/AppInfo.swift`.
+
+## The app in front is named, and its row marked
+
+The menu names the app in front above the clock, and marks that app's countdown row "(foreground)".
+
+The frontmost app is the one exception the clock cannot account for on its own:
+its countdown runs to zero and stays there, because an app is never quit while
+someone is looking at it. Unmarked, that reads as the app being stuck.
+
+Being in front and playing audio are the two reasons a row can sit still, so
+they share one parenthetical — "paused (playing audio, foreground)" — rather
+than accumulating brackets.
+
+The name is remembered rather than read fresh each time. Opening the menu makes
+Smart Quit active, and Smart Quit is an accessory app that never appears in
+`regularApps()`, so the app in front reads as nothing at precisely the moment
+someone is reading the menu. `StatusItemController` keeps the last one it saw.

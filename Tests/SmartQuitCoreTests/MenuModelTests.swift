@@ -21,7 +21,8 @@ final class MenuModelTests: XCTestCase {
         apps: [RunningApp] = [],
         accessibilityGranted: Bool = true,
         launchAtLogin: Bool = false,
-        version: String? = "0.1.0"
+        version: String? = "0.1.0",
+        foregroundApp: String? = nil
     ) -> [MenuNode] {
         MenuModel.build(
             settings: settings,
@@ -29,7 +30,8 @@ final class MenuModelTests: XCTestCase {
             apps: apps,
             isAccessibilityGranted: accessibilityGranted,
             isLaunchAtLoginEnabled: launchAtLogin,
-            version: version
+            version: version,
+            foregroundAppName: foregroundApp
         )
     }
 
@@ -346,5 +348,69 @@ extension MenuModelTests {
             AppInfo.releasesURL?.absoluteString,
             "https://github.com/aswinmurali-io/smart_quit/releases"
         )
+    }
+}
+
+// MARK: - The foreground app
+
+extension MenuModelTests {
+    private func countdown(
+        name: String = "Preview",
+        remaining: TimeInterval = 135,
+        isPaused: Bool = false,
+        isFrontmost: Bool = false
+    ) -> Countdown {
+        Countdown(
+            pid: 1,
+            bundleID: "com.example.\(name)",
+            name: name,
+            remaining: remaining,
+            isPaused: isPaused,
+            isFrontmost: isFrontmost
+        )
+    }
+
+    func testMarksACountdownThatIsInFront() {
+        let title = MenuModel.countdownTitle(for: countdown(name: "Safari", isFrontmost: true))
+
+        XCTAssertEqual(title, "Safari — 2m 15s (foreground)")
+    }
+
+    /// A paused app keeps its existing wording; being in front adds to it
+    /// rather than replacing it.
+    func testMarksACountdownThatIsBothPausedAndInFront() {
+        let title = MenuModel.countdownTitle(
+            for: countdown(name: "Spotify", isPaused: true, isFrontmost: true)
+        )
+
+        XCTAssertEqual(title, "Spotify — paused (playing audio, foreground)")
+    }
+
+    func testLeavesAnOrdinaryCountdownUnmarked() {
+        XCTAssertEqual(MenuModel.countdownTitle(for: countdown()), "Preview — 2m 15s")
+    }
+
+    func testNamesTheAppInFront() {
+        XCTAssertTrue(build(foregroundApp: "Safari").contains { $0.title == "In front — Safari" })
+    }
+
+    func testTheForegroundRowIsALabel() {
+        let node = build(foregroundApp: "Safari").first { $0.title.hasPrefix("In front") }
+
+        XCTAssertEqual(node?.kind, .label)
+        XCTAssertEqual(node?.isEnabled, false)
+    }
+
+    func testOmitsTheForegroundRowWhenNothingIsKnown() {
+        XCTAssertFalse(build(foregroundApp: nil).contains { $0.title.hasPrefix("In front") })
+    }
+
+    /// Context before the list it explains.
+    func testPutsTheForegroundRowAboveTheClockHeader() throws {
+        let nodes = build(foregroundApp: "Safari")
+        let front = try XCTUnwrap(nodes.firstIndex { $0.title.hasPrefix("In front") })
+        let clock = try XCTUnwrap(nodes.firstIndex { $0.title.hasPrefix("On the clock") })
+
+        XCTAssertEqual(clock, front + 1)
     }
 }

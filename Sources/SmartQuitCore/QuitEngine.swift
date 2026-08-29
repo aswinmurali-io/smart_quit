@@ -63,6 +63,8 @@ public final class QuitEngine {
     private struct Tracked {
         let bundleID: String
         var name: String
+        /// Refreshed every sweep: focus moves while an app is on the clock.
+        var isFrontmost: Bool
         var state: State
     }
 
@@ -145,6 +147,7 @@ public final class QuitEngine {
             tracked[app.pid] = Tracked(
                 bundleID: app.bundleID,
                 name: app.name,
+                isFrontmost: app.isFrontmost,
                 state: .windowless(
                     Clock(served: 0, lastSeen: now, isPaused: isPausedByAudio(app))
                 )
@@ -163,6 +166,7 @@ public final class QuitEngine {
         }
 
         tracked[app.pid]?.name = app.name
+        tracked[app.pid]?.isFrontmost = app.isFrontmost
 
         switch state {
         case .windowless(let clock):
@@ -263,7 +267,8 @@ public final class QuitEngine {
                 bundleID: entry.bundleID,
                 name: entry.name,
                 remaining: remaining,
-                isPaused: clock.isPaused
+                isPaused: clock.isPaused,
+                isFrontmost: entry.isFrontmost
             )
         }
         // Paused apps last: they are not going anywhere while they play, so

@@ -37,6 +37,7 @@ runtime, no background daemon**.
 ✓ Quit idle apps
 ✓ Pause apps playing audio
 ──────────────────────────────
+  In front — Safari
   On the clock — checks every 15s
     Preview — 2m 15s
     Notes — 4m 03s
@@ -104,7 +105,7 @@ dialog every 15 seconds, forever.
 
 | | Why |
 |---|---|
-| **The app you're looking at** | Its clock keeps running, so it goes the moment you switch away — but never while it's in front of you. |
+| **The app you're looking at** | Its clock keeps running, so it goes the moment you switch away — but never while it's in front of you. The menu names it, and marks its row *(foreground)*. |
 | **Anything with unsaved work** | Quitting is `terminate()`, never `terminate(force:)`. The app shows its save dialog and refuses. That's the correct outcome, not a failure. |
 | **Apps it couldn't inspect** | An unreadable window count is *unknown*, never *zero*. Without that distinction, a hung app — or a revoked permission — reads as windowless and gets quit. |
 | **Minimized or hidden apps** | Both still count as having windows. A minimized window is work in progress. |
