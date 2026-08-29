@@ -47,13 +47,12 @@ cp -R "${BUNDLE}" "${STAGING}/"
 ln -s /Applications "${STAGING}/Applications"
 
 echo "==> Drawing the background"
+# One image, at exactly the window's point size. A two-page hidpi TIFF is the
+# usual way to get a crisp background and it misbehaves here: Finder draws the
+# 2x page at 1:1 anchored bottom-left, so the window shows a quarter of the
+# artwork at double size.
 swift Scripts/make-dmg-background.swift >/dev/null
-# One TIFF holding both scales. Finder picks the 2x page on a Retina display;
-# a plain PNG would be upscaled and visibly soft.
-tiffutil -cathidpicheck \
-    build/dmg-background/background.png \
-    build/dmg-background/background@2x.png \
-    -out "${STAGING}/.background/background.tiff" >/dev/null
+cp build/dmg-background/background.png "${STAGING}/.background/background.png"
 
 # MARK: Arrange
 #
@@ -100,7 +99,7 @@ echo "==> Arranging the window"
 # failing: an unstyled image still installs.
 ARRANGE_ERROR="$(
     osascript 2>&1 >/dev/null <<APPLESCRIPT || true
-set backgroundImage to POSIX file "${MOUNT}/.background/background.tiff" as alias
+set backgroundImage to POSIX file "${MOUNT}/.background/background.png" as alias
 tell application "Finder"
     tell disk "${VOLUME}"
         open

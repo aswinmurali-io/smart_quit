@@ -3,14 +3,22 @@
 // Draws the disk image's window background into build/dmg-background/.
 //
 // Generated for the same reason as the app icon: a drawn background can be
-// reviewed in a diff and adjusted in one place. The output is a two-page TIFF
-// rather than a PNG, because that is the only way to give Finder a retina
-// representation — it picks the 2x page on a Retina display and the 1x page
-// elsewhere. Scripts/make-dmg.sh combines the two with `tiffutil`.
+// reviewed in a diff and adjusted in one place.
 //
-// The geometry here has to match the icon positions in make-dmg.sh: the
-// background is mapped 1:1 onto the window's content area, so the arrow is only
-// pointing between the icons if both agree on where they are.
+// One image, at exactly the window's point size. The usual trick for a crisp
+// background is a two-page TIFF built with `tiffutil -cathidpicheck`, and it
+// does not work here: Finder takes the 2x page and draws it at 1:1, anchored
+// bottom-left, so the window shows the lower-left quarter of the artwork
+// blown up to double size. A single-resolution image is drawn where it is
+// meant to go, which matters more than its edges being perfectly sharp.
+//
+// Nothing here is text, for the same reason. Soft type is obvious in a way a
+// soft gradient is not, and an arrow pointing at the Applications folder says
+// what a caption would have said.
+//
+// The geometry has to match the icon positions in make-dmg.sh: the background
+// is mapped 1:1 onto the window's content area, so the arrow only points
+// between the icons if both files agree on where they are.
 
 import AppKit
 import Foundation
@@ -38,52 +46,38 @@ private func drawBackground(width: CGFloat, height: CGFloat) {
     gradient?.draw(in: NSRect(x: 0, y: 0, width: width, height: height), angle: -90)
 }
 
-private func drawArrow(scale: CGFloat) {
+private func drawArrow() {
     // Between the two icons, clear of both. The icons are 128pt, so their edges
     // sit 64pt either side of their centres.
-    let startX = (appIconCenterX + 78) * scale
-    let endX = (applicationsCenterX - 78) * scale
+    let startX = appIconCenterX + 78
+    let endX = applicationsCenterX - 78
     // Flipped: Finder measures icon positions from the top of the window, and
     // the layout constants above follow it.
-    let y = (windowHeight - iconCenterY) * scale
+    let y = windowHeight - iconCenterY
 
     let violet = NSColor(red: 0.52, green: 0.42, blue: 0.82, alpha: 0.75)
     violet.setStroke()
     violet.setFill()
 
-    let headLength: CGFloat = 22 * scale
+    let headLength: CGFloat = 22
     let shaft = NSBezierPath()
     shaft.move(to: NSPoint(x: startX, y: y))
     shaft.line(to: NSPoint(x: endX - headLength, y: y))
-    shaft.lineWidth = 6 * scale
+    shaft.lineWidth = 6
     shaft.lineCapStyle = .round
     shaft.stroke()
 
     let head = NSBezierPath()
     head.move(to: NSPoint(x: endX, y: y))
-    head.line(to: NSPoint(x: endX - headLength, y: y + 14 * scale))
-    head.line(to: NSPoint(x: endX - headLength, y: y - 14 * scale))
+    head.line(to: NSPoint(x: endX - headLength, y: y + 14))
+    head.line(to: NSPoint(x: endX - headLength, y: y - 14))
     head.close()
     head.fill()
 }
 
-private func draw(_ text: String, size: CGFloat, weight: NSFont.Weight,
-                  color: NSColor, centerY: CGFloat, width: CGFloat, scale: CGFloat) {
-    let attributes: [NSAttributedString.Key: Any] = [
-        .font: NSFont.systemFont(ofSize: size * scale, weight: weight),
-        .foregroundColor: color,
-    ]
-    let attributed = NSAttributedString(string: text, attributes: attributes)
-    let measured = attributed.size()
-    attributed.draw(at: NSPoint(
-        x: (width - measured.width) / 2,
-        y: (windowHeight - centerY) * scale - measured.height / 2
-    ))
-}
-
-private func render(scale: CGFloat) -> NSBitmapImageRep? {
-    let width = windowWidth * scale
-    let height = windowHeight * scale
+private func render() -> NSBitmapImageRep? {
+    let width = windowWidth
+    let height = windowHeight
 
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
@@ -98,19 +92,11 @@ private func render(scale: CGFloat) -> NSBitmapImageRep? {
         bitsPerPixel: 0
     ) else { return nil }
 
-    // Tell the rep its point size, so the 2x page is tagged as retina rather
-    // than as a larger image.
-    rep.size = NSSize(width: windowWidth, height: windowHeight)
-
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
     drawBackground(width: width, height: height)
-    drawArrow(scale: scale)
-    draw("Smart Quit", size: 26, weight: .semibold,
-         color: NSColor(white: 0.18, alpha: 1), centerY: 62, width: width, scale: scale)
-    draw("Drag it onto Applications to install", size: 13, weight: .regular,
-         color: NSColor(white: 0.45, alpha: 1), centerY: 330, width: width, scale: scale)
+    drawArrow()
 
     NSGraphicsContext.restoreGraphicsState()
     return rep
@@ -123,13 +109,11 @@ let output = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 try? FileManager.default.removeItem(at: output)
 try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
 
-for (scale, name) in [(CGFloat(1), "background.png"), (CGFloat(2), "background@2x.png")] {
-    guard let rep = render(scale: scale),
-          let data = rep.representation(using: .png, properties: [:]) else {
-        FileHandle.standardError.write(Data("error: could not render \(name)\n".utf8))
-        exit(1)
-    }
-    try data.write(to: output.appendingPathComponent(name))
+guard let rep = render(),
+      let data = rep.representation(using: .png, properties: [:]) else {
+    FileHandle.standardError.write(Data("error: could not render the background\n".utf8))
+    exit(1)
 }
+try data.write(to: output.appendingPathComponent("background.png"))
 
 print("Wrote \(output.path)")

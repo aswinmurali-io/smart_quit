@@ -110,10 +110,18 @@ binary can only be replaced. The hourglass is drawn by hand rather than rendered
 from the `hourglass` SF Symbol the menu bar uses, because the SF Symbols licence
 does not allow a symbol to be used as an app icon.
 
-The background is written as a two-page TIFF, which is the only way to give
-Finder a retina representation — it takes the 2x page on a Retina display and
-the 1x page elsewhere, where a single PNG would be upscaled and visibly soft.
-Its arrow is positioned from the same constants as the icons in
-`Scripts/make-dmg.sh`; the two files have to agree or the arrow points at
-nothing. Disk image backgrounds do not follow the system appearance, so it
-commits to a light palette rather than serving both badly.
+The background is a single image at exactly the window's point size. The usual
+way to get a crisp one is a two-page TIFF from `tiffutil -cathidpicheck`, and it
+misbehaves: Finder takes the 2x page and draws it at 1:1 anchored bottom-left,
+so the window shows the lower-left quarter of the artwork at double size. Being
+drawn in the right place matters more than having sharp edges.
+
+It carries no text for the same reason — soft type is obvious where a soft
+gradient is not, and an arrow pointing at the Applications folder says what a
+caption would have. The arrow is positioned from the same constants as the icons
+in `Scripts/make-dmg.sh`; the two files have to agree or it points at nothing.
+
+Disk image backgrounds do not follow the system appearance, so it commits to a
+light palette rather than serving both badly. Nor can the `.app` extension be
+hidden from here: `AppleShowAllExtensions` overrides the per-file flag, and
+readers who have not set it see no extension anyway.
