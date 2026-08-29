@@ -91,7 +91,10 @@ hdiutil create \
 # obliges, on the stale volume, and the layout silently goes nowhere.
 while read -r stale; do
     [[ -n "${stale}" ]] && hdiutil detach "${stale}" -force -quiet 2>/dev/null || true
-done < <(hdiutil info | grep -F "/Volumes/${APP_NAME}" | awk '{print $1}')
+# Matched exactly, on the whole mount point. A substring match would also
+# take out a volume of the user's called "Smart Quit Backup", force-detaching
+# something this script never created.
+done < <(hdiutil info | awk -F'\t' -v v="/Volumes/${APP_NAME}" '$NF == v {print $1}')
 
 ATTACH="$(hdiutil attach -readwrite -noverify -noautoopen "${RW_IMAGE}")"
 DEVICE="$(echo "${ATTACH}" | grep -E '^/dev/' | head -1 | awk '{print $1}')"
@@ -111,8 +114,11 @@ echo "==> Arranging the window"
 # Finder is scripted through Apple Events, which macOS gates behind the
 # Automation permission. Denied, the layout is skipped rather than the build
 # failing: an unstyled image still installs.
-ARRANGE_ERROR="$(
-    osascript 2>&1 >/dev/null <<APPLESCRIPT || true
+# Judged by exit status, not by whether anything reached stderr: osascript
+# writes warnings there too, and treating those as failure reports an
+# unstyled image when the layout in fact applied.
+ARRANGE_LOG="$(mktemp)"
+if osascript >/dev/null 2>"${ARRANGE_LOG}" <<APPLESCRIPT
 set backgroundImage to POSIX file "${MOUNT}/.background/background.png" as alias
 tell application "Finder"
     tell disk "${VOLUME}"
@@ -144,17 +150,16 @@ tell application "Finder"
     end tell
 end tell
 APPLESCRIPT
-)"
-
-if [[ -z "${ARRANGE_ERROR}" ]]; then
+then
     ARRANGED=1
 else
     ARRANGED=0
     echo "    Finder could not be scripted, so the image keeps the default layout:"
-    echo "    ${ARRANGE_ERROR}"
+    sed 's/^/    /' "${ARRANGE_LOG}"
     echo "    If this is a permission error, grant Automation access for Finder to"
     echo "    whichever app runs this script in System Settings > Privacy & Security."
 fi
+rm -f "${ARRANGE_LOG}"
 
 # Let Finder finish writing .DS_Store before the volume goes away.
 sync

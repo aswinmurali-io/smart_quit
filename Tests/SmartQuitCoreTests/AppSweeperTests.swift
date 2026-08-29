@@ -196,11 +196,13 @@ extension AppSweeperTests {
 
         sweepAndWait(sweeper)
 
-        XCTAssertEqual(sweeper.lastSweep.map(\.name), ["Safari", "Notes"])
-        XCTAssertEqual(sweeper.lastSweep.map(\.windowCount), [3, 0])
+        XCTAssertEqual(sweeper.lastSweep?.map(\.name), ["Safari", "Notes"])
+        XCTAssertEqual(sweeper.lastSweep?.map(\.windowCount), [3, 0])
     }
 
-    func testReportsNoSnapshotsBeforeTheFirstSweep() {
-        XCTAssertTrue(sweeper(terminator: SpyTerminator()).lastSweep.isEmpty)
+    /// Nil, not empty: "no sweep has run" and "nothing has a window" are
+    /// different answers and the menu says different things about them.
+    func testReportsNothingKnownBeforeTheFirstSweep() {
+        XCTAssertNil(sweeper(terminator: SpyTerminator()).lastSweep)
     }
 }

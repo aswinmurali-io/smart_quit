@@ -33,41 +33,9 @@ runtime, no background daemon**.
 
 ## What it looks like
 
-```
-✓ Quit idle apps
-✓ Pause apps playing audio
-──────────────────────────────
-  In front — Safari
-  On the clock — checks every 3s
-    Preview — 2m 15s
-    Notes — 4m 03s
-    Spotify — paused (playing audio)
-  With windows — 2
-    Safari — 2 windows
-    Xcode — 1 window
-──────────────────────────────
-  Grace period — 5 minutes    ▸
-      1 minute
-      2 minutes
-    ✓ 5 minutes
-      10 minutes
-      30 minutes
-      Custom…
-      ────────────────────────
-      Per-app grace periods   ▸
-  Excluded apps               ▸
-      Preview
-      Spotify
-    ✓ Notes
-──────────────────────────────
-  Open Accessibility Settings…
-✓ Launch at login
-──────────────────────────────
-  Version 0.1.0
-  Check for Updates…
-──────────────────────────────
-  Quit Smart Quit
-```
+<p align="center">
+  <img src="docs/menu.png" alt="The Smart Quit menu, showing the app in front, apps on the clock, apps with windows, and the settings below them" width="520">
+</p>
 
 The hourglass icon fills as apps go on the clock, and dims when you pause it.
 Countdowns tick live while the menu is open.

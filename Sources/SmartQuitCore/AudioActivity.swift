@@ -18,12 +18,11 @@ public protocol ProcessAncestry: AnyObject {
 
 /// Maps audio-emitting processes onto the applications they belong to.
 public enum AudioAttribution {
-    /// How far up the process tree a helper is followed.
+    /// How many processes the walk will look at, the emitter included.
     ///
     /// Chrome's audio comes from a renderer two levels below the browser, so
-    /// one hop is not enough. The bound is what stops a corrupt or cyclic
-    /// parent chain from spinning the sweep — there is no cycle detection
-    /// beyond it.
+    /// one is not enough. The bound is what stops a corrupt or cyclic parent
+    /// chain from spinning the sweep — there is no cycle detection beyond it.
     static let maxDepth = 8
 
     /// The subset of `appPIDs` that is playing audio, directly or through a
@@ -39,7 +38,7 @@ public enum AudioAttribution {
             var current: pid_t? = audioPID
             var depth = 0
 
-            while let pid = current, depth <= maxDepth {
+            while let pid = current, depth < maxDepth {
                 if appPIDs.contains(pid) {
                     playing.insert(pid)
                     break

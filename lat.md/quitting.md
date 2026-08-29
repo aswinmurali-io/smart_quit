@@ -52,6 +52,9 @@ be quit again immediately. Keying by pid gives it a fresh start.
 
 `NSWorkspace.didTerminateApplicationNotification` drops state for apps that quit
 on their own, and each sweep prunes state for pids that are no longer running.
+The notification is where a successful quit is nearly always seen: it arrives
+long before the next sweep could notice the app missing, so that is where the
+confirmation is logged, with the sweep's own line left as the backstop it is.
 As a backstop, an entry whose bundle identifier no longer matches the app now
 holding that pid is discarded, so a recycled pid cannot inherit a clock, a
 per-app grace override, or a name from the process that died.

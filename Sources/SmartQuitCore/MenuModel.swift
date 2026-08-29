@@ -21,7 +21,10 @@ public struct MenuNode: Equatable {
         /// A label the user cannot act on: a section heading or a status line.
         case label
         /// A live countdown row, identified so its label can tick in place.
-        case countdown(bundleID: String)
+        ///
+        /// By pid, not bundle identifier: two instances of the same app are two
+        /// separate clocks, and keying them together loses one of the rows.
+        case countdown(pid: pid_t)
         case action(MenuAction)
         case submenu([MenuNode])
     }
@@ -66,7 +69,7 @@ public enum MenuModel {
         isLaunchAtLoginEnabled: Bool,
         version: String?,
         foregroundAppName: String?,
-        openApps: [AppSnapshot]
+        openApps: [AppSnapshot]?
     ) -> [MenuNode] {
         var nodes: [MenuNode] = []
 
@@ -185,7 +188,7 @@ public enum MenuModel {
         nodes += countdowns.map {
             MenuNode(
                 title: countdownTitle(for: $0),
-                kind: .countdown(bundleID: $0.bundleID),
+                kind: .countdown(pid: $0.pid),
                 isEnabled: false,
                 indent: 1
             )
@@ -219,7 +222,13 @@ public enum MenuModel {
     /// Inline, matching the clock above it: both are answers to "what is going
     /// on", and one of them hiding behind a disclosure arrow made them look
     /// like different kinds of thing.
-    private static func windowedAppsSection(_ openApps: [AppSnapshot]) -> [MenuNode] {
+    private static func windowedAppsSection(_ openApps: [AppSnapshot]?) -> [MenuNode] {
+        // No sweep has finished yet, which is not the same as nothing having a
+        // window — the same distinction the window counter draws with Int?.
+        guard let openApps else {
+            return [.label("With windows"), .label("Not checked yet", indent: 1)]
+        }
+
         // An unreadable count is not evidence of a window, the same way it is
         // not evidence of none.
         let windowed = openApps

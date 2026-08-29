@@ -56,16 +56,29 @@ final class AudioAttributionTests: XCTestCase {
         XCTAssertEqual(attribute(audio: [99], apps: [42]), [])
     }
 
-    func testStopsClimbingPastTheDepthLimit() {
-        // A chain longer than the limit, ending at a tracked app.
+    /// A chain of `n` links, the emitter being link 0.
+    private func chain(_ links: Int) {
         var parents: [pid_t: pid_t] = [:]
-        for step in 0..<(AudioAttribution.maxDepth + 2) {
+        for step in 0..<links {
             parents[pid_t(100 + step)] = pid_t(101 + step)
         }
-        parents[pid_t(100 + AudioAttribution.maxDepth + 2)] = 42
         ancestry.parents = parents
+    }
 
-        XCTAssertEqual(attribute(audio: [100], apps: [42]), [])
+    /// The last process the walk is willing to look at is the one at
+    /// `maxDepth - 1`, the emitter counting as the first.
+    func testReachesTheAppAtTheDepthLimit() {
+        chain(AudioAttribution.maxDepth - 1)
+        let last = pid_t(100 + AudioAttribution.maxDepth - 1)
+
+        XCTAssertEqual(attribute(audio: [100], apps: [last]), [last])
+    }
+
+    func testStopsOneProcessPastTheDepthLimit() {
+        chain(AudioAttribution.maxDepth)
+        let tooFar = pid_t(100 + AudioAttribution.maxDepth)
+
+        XCTAssertEqual(attribute(audio: [100], apps: [tooFar]), [])
     }
 
     func testReportsNothingWhenNoProcessIsPlaying() {

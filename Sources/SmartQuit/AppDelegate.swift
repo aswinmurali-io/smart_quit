@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             engine: engine,
             provider: provider,
             sweep: { [weak self] in self?.sweeper.sweep() },
-            openApps: { [weak self] in self?.sweeper.lastSweep ?? [] }
+            openApps: { [weak self] in self?.sweeper.lastSweep }
         )
 
         sweeper.onSweepCompleted = { [weak self] in

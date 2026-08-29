@@ -73,8 +73,13 @@ CODESIGN_IDENTITY="${DEVELOPER_ID}" ./Scripts/build-app.sh
 # beyond the entitlements file, which exists so the set is explicit rather than
 # implied by its absence.
 
+# Not --deep: Apple documents it as a verification convenience and warns
+# against signing with it, because it stamps every nested binary with the
+# same entitlements instead of signing each on its own terms. There is no
+# nested code here today, and this is where that would quietly stop being
+# true.
 echo "==> Signing for distribution"
-codesign --force --deep \
+codesign --force \
     --sign "${DEVELOPER_ID}" \
     --options runtime \
     --entitlements "${ENTITLEMENTS}" \

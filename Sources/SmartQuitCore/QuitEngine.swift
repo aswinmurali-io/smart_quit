@@ -249,7 +249,14 @@ public final class QuitEngine {
     // MARK: - Lifecycle
 
     /// Drops all state for an app, for use when it terminates on its own.
+    ///
+    /// This is where a successful quit is almost always observed: the workspace
+    /// notification arrives well before the next sweep could notice the app
+    /// missing, so the equivalent line in ``apply(_:now:)`` rarely gets to run.
     public func forget(pid: pid_t) {
+        if case .quitRequested = tracked[pid]?.state {
+            Log.engine.info("\(self.tracked[pid]?.name ?? "?", privacy: .public) quit")
+        }
         tracked[pid] = nil
     }
 

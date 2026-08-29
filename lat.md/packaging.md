@@ -127,6 +127,11 @@ image exists — `hdiutil` rewrites the file when it compresses, dropping any
 signature already on it — which is why `make-dmg.sh` leaves it unsigned, that
 and an image it builds alone being undistributable regardless.
 
+Signing is not `--deep`. Apple documents that flag as a verification
+convenience and warns against signing with it: it stamps every nested binary
+with the same entitlements rather than signing each on its own terms. There is
+no nested code here today, which is exactly when a wrong flag goes unnoticed.
+
 Its identifier is pinned to `com.smartquit.SmartQuit.dmg`. Left to itself
 `codesign` derives one from the file name and truncates at the first dot, so
 `SmartQuit-0.1.0.dmg` signs as `SmartQuit-0`: a different identifier every

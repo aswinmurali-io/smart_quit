@@ -23,7 +23,7 @@ final class MenuModelTests: XCTestCase {
         launchAtLogin: Bool = false,
         version: String? = "0.1.0",
         foregroundApp: String? = nil,
-        openApps: [AppSnapshot] = []
+        openApps: [AppSnapshot]? = []
     ) -> [MenuNode] {
         MenuModel.build(
             settings: settings,
@@ -478,5 +478,37 @@ extension MenuModelTests {
 
         XCTAssertEqual(children.first?.kind, .label)
         XCTAssertEqual(children.first?.isEnabled, false)
+    }
+}
+
+// MARK: - Fixes locked in
+
+extension MenuModelTests {
+    /// Before any sweep has finished, nothing is known — which is not the same
+    /// as nothing having a window.
+    func testSaysTheWindowListIsNotCheckedYet() {
+        let nodes = build(openApps: nil)
+
+        XCTAssertTrue(nodes.contains { $0.title == "With windows" })
+        XCTAssertTrue(nodes.contains { $0.title == "Not checked yet" })
+    }
+
+    func testDoesNotClaimZeroWindowsBeforeASweep() {
+        XCTAssertFalse(build(openApps: nil).contains { $0.title.contains("With windows — ") })
+    }
+
+    /// Two instances of one app are two clocks. Keyed by bundle identifier they
+    /// would collide and only one row could ever tick.
+    func testGivesEachInstanceOfAnAppItsOwnCountdownRow() {
+        let nodes = build(countdowns: [
+            Countdown(pid: 1, bundleID: "com.example.App", name: "App", remaining: 60),
+            Countdown(pid: 2, bundleID: "com.example.App", name: "App", remaining: 120),
+        ])
+        let kinds = nodes.compactMap { node -> MenuNode.Kind? in
+            if case .countdown = node.kind { return node.kind }
+            return nil
+        }
+
+        XCTAssertEqual(kinds, [.countdown(pid: 1), .countdown(pid: 2)])
     }
 }

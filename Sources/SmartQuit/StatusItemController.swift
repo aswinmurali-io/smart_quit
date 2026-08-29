@@ -16,11 +16,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let engine: QuitEngine
     private let provider: RunningAppsProviding
     private let sweep: () -> Void
-    /// What the last sweep saw, for the list of apps that have windows.
-    private let openApps: () -> [AppSnapshot]
+    /// What the last sweep saw, or nil before one has finished.
+    private let openApps: () -> [AppSnapshot]?
 
     /// Countdown rows currently on screen, so they can tick without a rebuild.
-    private var countdownItems: [String: NSMenuItem] = [:]
+    ///
+    /// Keyed by pid, matching the engine: two instances of one app are two
+    /// clocks, and a bundle identifier cannot tell them apart.
+    private var countdownItems: [pid_t: NSMenuItem] = [:]
     private var tickTimer: Timer?
 
     /// Whether the menu is on screen, so a finished sweep knows whether there
@@ -29,7 +32,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// The countdown rows as last rendered. A sweep that leaves this unchanged
     /// must not rebuild the menu, or an open submenu collapses under the user.
-    private var renderedCountdownIDs: [String] = []
+    ///
+    /// A set, because the list is sorted by remaining time and pause state:
+    /// comparing order would rebuild whenever two rows swapped places, which
+    /// changes nothing that a rebuild is needed for.
+    private var renderedCountdownPIDs: Set<pid_t> = []
 
     /// The application in front, recorded as activations happen.
     ///
@@ -44,7 +51,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         engine: QuitEngine,
         provider: RunningAppsProviding,
         sweep: @escaping () -> Void,
-        openApps: @escaping () -> [AppSnapshot]
+        openApps: @escaping () -> [AppSnapshot]?
     ) {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.settings = settings
@@ -98,7 +105,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func refreshIcon() {
         guard let button = statusItem.button else { return }
 
-        let pending = !engine.countdowns(now: Date()).isEmpty
+        // A paused clock is going nowhere, so it must not read as imminent.
+        // The menu says "paused (playing audio)"; the icon should agree.
+        let pending = engine.countdowns(now: Date()).contains { !$0.isPaused }
         let symbol = pending ? "hourglass.bottomhalf.filled" : "hourglass"
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Smart Quit")
         image?.isTemplate = true
@@ -119,12 +128,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: - Menu lifecycle
 
     func menuNeedsUpdate(_ menu: NSMenu) {
+        // Read once, so what is rendered and what is recorded as rendered are
+        // the same list rather than two reads a moment apart.
+        let countdowns = engine.countdowns(now: Date())
+
         countdownItems.removeAll()
         menu.removeAllItems()
-        for node in currentMenuNodes() {
+        for node in currentMenuNodes(countdowns: countdowns) {
             menu.addItem(render(node))
         }
-        renderedCountdownIDs = engine.countdowns(now: Date()).map(\.bundleID)
+        renderedCountdownPIDs = Set(countdowns.map(\.pid))
     }
 
     func menuWillOpen(_ menu: NSMenu) {
@@ -148,7 +161,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         tickTimer?.invalidate()
         tickTimer = nil
         countdownItems.removeAll()
-        renderedCountdownIDs = []
+        renderedCountdownPIDs = []
     }
 
     /// Folds a finished sweep into what is on screen.
@@ -160,25 +173,25 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         refreshIcon()
 
         guard isMenuOpen, let menu = statusItem.menu else { return }
-        let current = engine.countdowns(now: Date()).map(\.bundleID)
-        guard current != renderedCountdownIDs else { return }
+        let current = Set(engine.countdowns(now: Date()).map(\.pid))
+        guard current != renderedCountdownPIDs else { return }
 
         menuNeedsUpdate(menu)
     }
 
     private func tickCountdowns() {
         for countdown in engine.countdowns(now: Date()) {
-            countdownItems[countdown.bundleID]?.title =
+            countdownItems[countdown.pid]?.title =
                 MenuModel.countdownTitle(for: countdown)
         }
     }
 
-    private func currentMenuNodes() -> [MenuNode] {
+    private func currentMenuNodes(countdowns: [Countdown]) -> [MenuNode] {
         let apps = provider.regularApps()
 
         return MenuModel.build(
             settings: settings,
-            countdowns: engine.countdowns(now: Date()),
+            countdowns: countdowns,
             apps: apps.sorted {
                 $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
             },
@@ -206,9 +219,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         case .label:
             item.isEnabled = false
 
-        case .countdown(let bundleID):
+        case .countdown(let pid):
             item.isEnabled = false
-            countdownItems[bundleID] = item
+            countdownItems[pid] = item
 
         case .submenu(let children):
             let submenu = NSMenu()

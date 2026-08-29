@@ -38,14 +38,17 @@ public final class AppSweeper {
     /// Called after each sweep so the UI can refresh.
     public var onSweepCompleted: (() -> Void)?
 
-    /// What the last sweep saw.
+    /// What the last sweep saw, or `nil` before one has finished.
     ///
     /// Kept here because nothing else keeps it: the engine drops an app the
     /// moment it knows it is not a candidate, so apps that have windows exist
     /// nowhere else by the time the menu wants to list them.
     ///
+    /// `nil` rather than empty until the first sweep lands, so the menu can say
+    /// "not checked yet" instead of asserting that nothing has a window.
+    ///
     /// - Important: Main queue only, like the rest of this type.
-    public private(set) var lastSweep: [AppSnapshot] = []
+    public private(set) var lastSweep: [AppSnapshot]?
 
     public init(
         provider: RunningAppsProviding,

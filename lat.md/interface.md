@@ -67,6 +67,10 @@ is not.
 The status item is an hourglass: empty when nothing is waiting, bottom-half
 filled when apps are on the clock, dimmed when Smart Quit is paused.
 
+A paused clock does not count as on the clock here. It is going nowhere for as
+long as the audio lasts, and a filled hourglass would promise a quit that cannot
+happen — the icon says what the menu says.
+
 This was a `moon.zzz` glyph, which sat a few slots away from the system Focus
 moon in the menu bar and read as a duplicate of it.
 
@@ -76,8 +80,14 @@ The menu is rebuilt when it opens; while it is open, a one-second timer updates
 only the countdown labels.
 
 Rebuilding the whole menu each second would collapse any submenu the user has
-open. Countdown rows carry their bundle identifier so their labels can be found
-and updated in place.
+open. Countdown rows carry their pid so their labels can be found and updated in
+place — pid rather than bundle identifier, because two instances of one app are
+two clocks and a bundle identifier cannot tell them apart.
+
+A finished sweep rebuilds only when the set of listed pids changes. The
+comparison is on a set, not a list: the rows are sorted by remaining time and
+pause state, so two of them swapping places is not a reason to tear down a
+submenu somebody is reading.
 
 The row's text is built by `MenuModel` rather than by the status item, so the
 label written on a tick is the one the menu was built with.
@@ -153,3 +163,9 @@ window has no standard subrole — Finder and its desktop — is absent from thi
 list for the same reason it is a quit candidate elsewhere. An unreadable count
 keeps an app out too: it is not evidence of a window, the same way it is not
 evidence of none.
+
+Before any sweep has finished, the heading reads "With windows" over "Not
+checked yet" rather than "With windows — 0". `AppSweeper.lastSweep` is `nil`
+until it has something to report, so the menu can tell "nothing has a window"
+apart from "nobody has looked" — the same distinction the window count draws
+with `Int?`.
