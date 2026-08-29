@@ -35,6 +35,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         super.init()
 
         let menu = NSMenu()
+        // Without this AppKit decides enablement itself and the model's
+        // isEnabled is silently ignored for top-level items.
+        menu.autoenablesItems = false
         menu.delegate = self
         statusItem.menu = menu
         refreshIcon()
@@ -77,10 +80,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        let timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        tickTimer?.invalidate()
+        // Menu tracking runs in its own run loop mode, which .common covers.
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             self?.tickCountdowns()
         }
-        // Menu tracking runs in its own run loop mode, which .common covers.
         RunLoop.main.add(timer, forMode: .common)
         tickTimer = timer
     }
@@ -121,7 +125,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         switch node.kind {
         case .separator:
-            break
+            break  // Returned above; the compiler still wants the case.
 
         case .label:
             item.isEnabled = false
@@ -197,6 +201,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             reportIfLaunchAtLoginFailed(LaunchAtLogin.setEnabled(!LaunchAtLogin.isEnabled))
 
         case .quit:
+            // Rendered with terminate(_:) directly, so it never reaches here.
             NSApp.terminate(nil)
         }
     }

@@ -42,6 +42,11 @@ final class CountdownFormatterTests: XCTestCase {
         XCTAssertEqual(CountdownFormatter.gracePeriodLabel(for: 1800), "30 minutes")
     }
 
+    func testLabelsWholeHoursAsHours() {
+        XCTAssertEqual(CountdownFormatter.gracePeriodLabel(for: 3600), "1 hour")
+        XCTAssertEqual(CountdownFormatter.gracePeriodLabel(for: 7200), "2 hours")
+    }
+
     func testLabelsAGracePeriodThatIsNotAWholeNumberOfMinutes() {
         XCTAssertEqual(CountdownFormatter.gracePeriodLabel(for: 90), "1m 30s")
     }

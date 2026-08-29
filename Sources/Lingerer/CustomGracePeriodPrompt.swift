@@ -3,6 +3,10 @@ import Foundation
 
 /// Asks for a grace period in minutes.
 enum CustomGracePeriodPrompt {
+    /// Accepted range, in minutes. A grace period of a fraction of a second
+    /// would quit apps the moment their last window closed.
+    static let range: ClosedRange<Double> = 1...1440
+
     /// Returns the chosen number of minutes, or `nil` if the user cancelled or
     /// typed something that is not a positive number.
     static func run(current: TimeInterval) -> Double? {
@@ -10,7 +14,10 @@ enum CustomGracePeriodPrompt {
 
         let alert = NSAlert()
         alert.messageText = "Grace period"
-        alert.informativeText = "Quit an app after this many minutes without a window."
+        alert.informativeText = """
+            Quit an app after this many minutes without a window. \
+            Between \(Int(range.lowerBound)) and \(Int(range.upperBound)).
+            """
         alert.addButton(withTitle: "Set")
         alert.addButton(withTitle: "Cancel")
 
@@ -23,7 +30,7 @@ enum CustomGracePeriodPrompt {
         guard alert.runModal() == .alertFirstButtonReturn else { return nil }
 
         guard let minutes = Double(field.stringValue.trimmingCharacters(in: .whitespaces)),
-              minutes > 0 else { return nil }
+              range.contains(minutes) else { return nil }
         return minutes
     }
 

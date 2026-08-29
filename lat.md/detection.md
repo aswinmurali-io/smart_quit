@@ -44,17 +44,29 @@ finished launching, or when Lingerer's Accessibility permission has been
 revoked. Reporting `0` in those cases would make every such app a quit
 candidate — a revoked permission would quit the user's entire session.
 
+Only `kAXErrorNoValue` means "no windows". Everything else that is not a success
+is unknown, including `kAXErrorAttributeUnsupported`, which says the element has
+no such attribute rather than that the app has no windows. Real apps on a normal
+desktop — Xcode and TextEdit among them — return `kAXErrorCannotComplete`
+persistently, so this distinction is exercised constantly, not just in theory.
+
 `nil` propagates through `AppSnapshot` in `Sources/LingererCore/AppSnapshot.swift`
 and is treated by the engine as "leave this app alone".
 
 ## Messaging timeout
 
-The counter sets `AXUIElementSetMessagingTimeout` to 0.5 seconds.
+The counter sets `AXUIElementSetMessagingTimeout` to 0.5 seconds, on the
+system-wide element.
 
 Accessibility calls are synchronous. Without a timeout, one hung application
 would block the sweep for as long as it stayed hung, and the menu bar item would
 stop updating. A short timeout turns that into a `nil` count, which is the safe
 answer.
+
+The timeout must be set on the system-wide element to apply process-wide. Apple
+documents that setting it on any other element covers that element alone — so
+setting it on the application element left every per-window subrole query
+waiting out the 6 second system default, which is the opposite of the intent.
 
 ## Eligible applications
 

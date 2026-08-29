@@ -97,9 +97,14 @@ quit requests, and quits that were refused.
 swift test
 ```
 
-The decision engine, window counting, settings, sweep assembly, menu structure
-and duration formatting are all covered. The engine takes time as a parameter,
-so the timing tests are exact and instant rather than sleeping.
+The decision engine, settings, menu structure and duration formatting are
+covered directly. The engine takes time as a parameter, so the timing tests are
+exact and instant rather than sleeping.
+
+Window counting is covered at its seams — the subrole filter and the mapping
+from `AXError` to "no windows" versus "unknown" — rather than against a live
+window server. The sweep's threading is covered for reentrancy and for
+re-reading the frontmost app, which is the path that can quit the wrong app.
 
 ## Licence
 

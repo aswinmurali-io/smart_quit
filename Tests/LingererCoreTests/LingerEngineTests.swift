@@ -253,6 +253,20 @@ final class LingerEngineTests: XCTestCase {
         XCTAssertEqual(terminator.terminated, [42])
     }
 
+    /// A confirmed quit clears the app's state outright, unlike a failed one
+    /// which leaves it surrendered and ineligible until a window appears.
+    func testAConfirmedQuitLeavesNoStateBehind() {
+        let app = AppSnapshot.make(pid: 42, windowCount: 0)
+
+        engine.apply([app], now: start)
+        engine.apply([app], now: start.addingTimeInterval(301))
+        engine.apply([app], now: start.addingTimeInterval(316))
+
+        engine.apply([app], now: start.addingTimeInterval(331))
+
+        XCTAssertEqual(engine.windowlessStart(forPID: 42), start.addingTimeInterval(331))
+    }
+
     func testAppThatSurvivesAQuitBecomesEligibleAgainOnlyAfterShowingAWindow() {
         terminator.stillRunningAfterTerminate = [42]
         let windowless = AppSnapshot.make(pid: 42, windowCount: 0)

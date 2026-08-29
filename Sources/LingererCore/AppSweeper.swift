@@ -6,6 +6,12 @@ import Foundation
 /// app. Listing applications and applying decisions happen on the main queue;
 /// the Accessibility window counting in between happens off it, because those
 /// calls are synchronous and can block on an unresponsive app.
+///
+/// - Important: ``start()``, ``sweep()`` and the engine they drive are main
+///   queue only. Nothing here is synchronised, and the background hop is
+///   deliberately given no access to this object's state — it works from values
+///   captured before it starts. The entry points assert the queue rather than
+///   trusting callers.
 public final class AppSweeper {
     /// How often the system is swept.
     public static let interval: TimeInterval = 15
@@ -40,23 +46,23 @@ public final class AppSweeper {
     // MARK: - Running
 
     public func start() {
+        dispatchPrecondition(condition: .onQueue(.main))
         guard timer == nil else { return }
-        let timer = Timer.scheduledTimer(withTimeInterval: Self.interval, repeats: true) { [weak self] _ in
+
+        // Scheduled in .common so the sweep keeps running while a menu is open;
+        // scheduledTimer would install it in .default only.
+        let timer = Timer(timeInterval: Self.interval, repeats: true) { [weak self] _ in
             self?.sweep()
         }
-        // Keep firing while menus are open.
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
         sweep()
     }
 
-    public func stop() {
-        timer?.invalidate()
-        timer = nil
-    }
-
     /// Performs one sweep: list apps, count their windows, apply the decisions.
     public func sweep() {
+        dispatchPrecondition(condition: .onQueue(.main))
+
         // A sweep that overruns the interval must not stack up behind itself.
         guard !isSweeping else {
             Log.engine.debug("Sweep still in flight — skipping this tick")
@@ -65,11 +71,14 @@ public final class AppSweeper {
         isSweeping = true
 
         let apps = provider.regularApps()
+        // Captured up front so the background work touches none of our state.
+        let counter = self.counter
+
         countingQueue.async { [weak self] in
-            guard let self else { return }
-            let snapshots = Self.snapshots(for: apps, using: self.counter)
+            let snapshots = Self.snapshots(for: apps, using: counter)
 
             DispatchQueue.main.async {
+                guard let self else { return }
                 // Re-read the frontmost app rather than trusting the value
                 // captured before counting began. Counting takes time, and
                 // quitting the app the user just switched to would be the worst

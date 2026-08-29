@@ -22,8 +22,10 @@ would let the relaunched app inherit the clock of the process that just died and
 be quit again immediately. Keying by pid gives it a fresh start.
 
 `NSWorkspace.didTerminateApplicationNotification` drops state for apps that quit
-on their own, and each sweep prunes state for pids that are no longer running,
-so a recycled pid never inherits anything.
+on their own, and each sweep prunes state for pids that are no longer running.
+As a backstop, an entry whose bundle identifier no longer matches the app now
+holding that pid is discarded, so a recycled pid cannot inherit a clock, a
+per-app grace override, or a name from the process that died.
 
 ## Graceful termination only
 
@@ -49,6 +51,11 @@ Showing a window clears the state and makes the app eligible again.
 ## The frontmost app is never quit
 
 An app the user is currently looking at is never quit, even once its clock has run out.
+
+Which app is frontmost is re-read on the main queue immediately before the
+decision, not taken from the start of the sweep. Counting windows happens on
+another queue and takes time; a user who switches to a windowless app during
+that gap would otherwise have the app they just activated quit underneath them.
 
 The clock keeps running while the app is frontmost rather than pausing or
 resetting. Switching away from a windowless app that has already served its
@@ -77,6 +84,11 @@ Listing apps and applying decisions happen on the main queue. The Accessibility
 window counting between them runs on a utility queue, because those calls are
 synchronous and can block. A sweep that overruns the interval is skipped rather
 than queued behind the one in flight.
+
+Nothing in the engine or the sweeper is synchronised, so both are main queue
+only. The background hop is given no access to the sweeper's state — it works
+from values captured before it starts — and the entry points assert the queue
+rather than trusting callers.
 
 See `AppSweeper` in `Sources/LingererCore/AppSweeper.swift`.
 

@@ -10,6 +10,8 @@ import Foundation
 ///
 /// State is keyed by pid rather than bundle identifier so that an app which
 /// quits and relaunches gets a fresh clock instead of inheriting a stale one.
+///
+/// - Important: Main queue only. Nothing here is synchronised.
 public final class LingerEngine {
     /// Where an app sits in its journey from "windowless" to "quit".
     private enum State {
@@ -29,6 +31,11 @@ public final class LingerEngine {
     }
 
     /// How long to wait before checking whether a quit request was honoured.
+    ///
+    /// Checked during a sweep rather than on its own timer, so the effective
+    /// delay is the first sweep at or after this point — up to one sweep
+    /// interval later. That is fine: the check only decides whether to stop
+    /// asking, and asking later is harmless.
     static let verificationDelay: TimeInterval = 10
 
     private let settings: SettingsProviding
