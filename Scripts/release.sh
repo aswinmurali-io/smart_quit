@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Builds, signs, notarizes and staples SmartQuit.dmg for distribution.
+# Builds, signs, notarizes and staples SmartQuit-<version>.dmg for distribution.
 #
 # Scripts/build-app.sh signs with an Apple Development certificate, which is
 # enough to run the app on the machine that built it. Handing it to anyone else
@@ -25,7 +25,10 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="Smart Quit"
 BUNDLE="dist/${APP_NAME}.app"
-DMG="dist/SmartQuit.dmg"
+# Derived the same way as in make-dmg.sh, from the same file, so the image this
+# notarizes is the one that was just built.
+VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)"
+DMG="dist/SmartQuit-${VERSION}.dmg"
 NOTARY_PROFILE="${NOTARY_PROFILE:-smartquit-notary}"
 ENTITLEMENTS="Resources/SmartQuit.entitlements"
 

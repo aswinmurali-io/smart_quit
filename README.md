@@ -24,6 +24,9 @@ with every unsaved-changes dialog intact.
 
 It lives in the menu bar. No Dock icon, no window, no preferences pane.
 
+The built app is 1.3 MB — native Swift and AppKit, no Electron, no bundled
+runtime, no background daemon.
+
 ## What it looks like
 
 ```
@@ -125,8 +128,9 @@ For a disk image instead:
 ./Scripts/make-dmg.sh
 ```
 
-That writes `dist/SmartQuit.dmg` — a drag-to-Applications installer. It works on
-the Mac that built it; sharing it needs the notarised build below.
+That writes `dist/SmartQuit-0.1.0.dmg` — a drag-to-Applications installer, named
+for the version in `Info.plist`. It works on the Mac that built it; sharing it
+needs the notarised build below.
 
 > **Why no `.xcodeproj`?** Smart Quit is a Swift package: the logic lives in a
 > library target so `swift test` runs against it directly, and a script

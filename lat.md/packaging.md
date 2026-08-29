@@ -2,6 +2,19 @@
 
 How the Swift package becomes an app bundle a person can install, and what signing it costs.
 
+## The disk image is named for its version
+
+`Scripts/make-dmg.sh` writes `SmartQuit-<version>.dmg`, reading the version from `Info.plist`.
+
+`Info.plist` is the single place a release number lives; both the packaging and
+release scripts read `CFBundleShortVersionString` from it rather than carrying
+their own copy. A file called `SmartQuit.dmg` says nothing about what is inside
+it, and two of them in a Downloads folder are indistinguishable — the second
+arrives as `SmartQuit-1.dmg`, which is worse than useless.
+
+`CFBundleVersion` stays a plain build counter, separate from the version people
+see.
+
 ## The product name and the code name differ
 
 The app is "Smart Quit" to a person and `SmartQuit` to the build.

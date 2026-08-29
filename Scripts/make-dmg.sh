@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Packages dist/Smart Quit.app into dist/SmartQuit.dmg.
+# Packages dist/Smart Quit.app into dist/SmartQuit-<version>.dmg.
 #
 # This is the packaging half of a release, split out so a disk image can be
 # built with whatever signature the app already has. Scripts/release.sh calls it
@@ -19,7 +19,13 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="Smart Quit"
 BUNDLE="dist/${APP_NAME}.app"
-DMG="dist/SmartQuit.dmg"
+
+# The image is named for the version it holds, read from Info.plist so there is
+# one place a release number lives. A download called SmartQuit.dmg says nothing
+# about what it contains, and two of them in a Downloads folder are
+# indistinguishable — the second arrives as "SmartQuit-1.dmg".
+VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)"
+DMG="dist/SmartQuit-${VERSION}.dmg"
 STAGING="build/dmg"
 RW_IMAGE="build/dmg-rw.dmg"
 
@@ -183,7 +189,7 @@ else
     echo "To share it, run ./Scripts/release.sh instead — that needs a Developer ID"
     echo "certificate and a notarytool profile. To open this one on another Mac,"
     echo "the quarantine flag has to be cleared by hand:"
-    echo "  xattr -d com.apple.quarantine /path/to/SmartQuit.dmg"
+    echo "  xattr -d com.apple.quarantine /path/to/$(basename "${DMG}")"
 fi
 
 echo
