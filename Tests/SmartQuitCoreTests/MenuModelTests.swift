@@ -1,5 +1,5 @@
 import XCTest
-@testable import LingererCore
+@testable import SmartQuitCore
 
 final class MenuModelTests: XCTestCase {
     private var suiteName: String!
@@ -7,7 +7,7 @@ final class MenuModelTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        suiteName = "dev.aswinmurali.Lingerer.tests.\(UUID().uuidString)"
+        suiteName = "dev.aswinmurali.SmartQuit.tests.\(UUID().uuidString)"
         settings = Settings(defaults: UserDefaults(suiteName: suiteName)!)
     }
 
@@ -56,7 +56,7 @@ final class MenuModelTests: XCTestCase {
             "Excluded apps",
             "Open Accessibility Settings…",
             "Launch at login",
-            "Quit Lingerer",
+            "Quit SmartQuit",
         ])
     }
 

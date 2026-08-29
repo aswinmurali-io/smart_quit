@@ -4,10 +4,10 @@ import os
 /// Logging for the app's decisions.
 ///
 /// Every state transition is recorded here, so `log stream --predicate
-/// 'subsystem == "dev.aswinmurali.Lingerer"'` gives a complete account of why
+/// 'subsystem == "dev.aswinmurali.SmartQuit"'` gives a complete account of why
 /// any application was or was not quit.
 public enum Log {
-    public static let subsystem = "dev.aswinmurali.Lingerer"
+    public static let subsystem = "dev.aswinmurali.SmartQuit"
 
     /// State transitions in the decision engine.
     public static let engine = Logger(subsystem: subsystem, category: "engine")

@@ -1,5 +1,5 @@
 import XCTest
-@testable import LingererCore
+@testable import SmartQuitCore
 
 final class SettingsTests: XCTestCase {
     private var suiteName: String!
@@ -7,7 +7,7 @@ final class SettingsTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        suiteName = "dev.aswinmurali.Lingerer.tests.\(UUID().uuidString)"
+        suiteName = "dev.aswinmurali.SmartQuit.tests.\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
     }
 

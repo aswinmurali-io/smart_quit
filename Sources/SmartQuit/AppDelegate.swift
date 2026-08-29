@@ -1,18 +1,18 @@
 import AppKit
 import Foundation
-import LingererCore
+import SmartQuitCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = Settings()
     private let provider = WorkspaceAppsProvider()
-    private var engine: LingerEngine!
+    private var engine: QuitEngine!
     private var sweeper: AppSweeper!
     private var statusItem: StatusItemController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let selfBundleID = Bundle.main.bundleIdentifier ?? "dev.aswinmurali.Lingerer"
+        let selfBundleID = Bundle.main.bundleIdentifier ?? "dev.aswinmurali.SmartQuit"
 
-        engine = LingerEngine(
+        engine = QuitEngine(
             settings: settings,
             terminator: WorkspaceTerminator(),
             protectedBundleIDs: ["com.apple.finder", selfBundleID]
@@ -38,13 +38,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observeAppTermination()
 
         // Prompting on first launch is the only way the user learns that the
-        // app needs this; without it Lingerer would silently do nothing.
+        // app needs this; without it SmartQuit would silently do nothing.
         if !AccessibilityPermission.requestIfNeeded() {
             Log.ui.notice("Starting without Accessibility permission — window counts unavailable")
         }
 
         sweeper.start()
-        Log.ui.info("Lingerer started")
+        Log.ui.info("SmartQuit started")
     }
 
     /// Clears state for apps that quit on their own, so a recycled pid never

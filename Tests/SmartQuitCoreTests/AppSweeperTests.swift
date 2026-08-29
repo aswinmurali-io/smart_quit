@@ -1,5 +1,5 @@
 import XCTest
-@testable import LingererCore
+@testable import SmartQuitCore
 
 final class AppSweeperTests: XCTestCase {
     private var provider: FakeAppsProvider!
@@ -59,7 +59,7 @@ final class AppSweeperTests: XCTestCase {
 
 extension AppSweeperTests {
     /// Counting windows takes time, during which the user can switch apps. The
-    /// frontmost app must be re-read afterwards, or Lingerer can quit the very
+    /// frontmost app must be re-read afterwards, or SmartQuit can quit the very
     /// app the user just activated.
     func testDoesNotQuitAnAppTheUserActivatedWhileItsWindowsWereCounted() {
         let terminator = SpyTerminator()
@@ -110,7 +110,7 @@ extension AppSweeperTests {
         let settings = FakeSettings()
         // Zero grace: the second sweep is the one that decides.
         settings.globalGracePeriod = 0
-        let engine = LingerEngine(
+        let engine = QuitEngine(
             settings: settings,
             terminator: terminator,
             protectedBundleIDs: []

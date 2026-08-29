@@ -12,7 +12,7 @@ import Foundation
 /// quits and relaunches gets a fresh clock instead of inheriting a stale one.
 ///
 /// - Important: Main queue only. Nothing here is synchronised.
-public final class LingerEngine {
+public final class QuitEngine {
     /// Where an app sits in its journey from "windowless" to "quit".
     private enum State {
         /// Has had no windows since this date.

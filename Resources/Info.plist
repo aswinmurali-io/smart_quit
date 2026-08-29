@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>Lingerer</string>
+	<string>SmartQuit</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.aswinmurali.Lingerer</string>
+	<string>dev.aswinmurali.SmartQuit</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Lingerer</string>
+	<string>SmartQuit</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,7 +27,7 @@
 	     gated by the Automation privacy prompt, but if it ever is, this is
 	     the message the user sees rather than a silent failure. -->
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Lingerer asks apps that have been left without windows to quit.</string>
+	<string>SmartQuit asks apps that have been left without windows to quit.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Aswin Murali. Licensed under the Apache License 2.0.</string>
 </dict>

@@ -1,5 +1,5 @@
 import XCTest
-@testable import LingererCore
+@testable import SmartQuitCore
 
 final class DefaultExclusionsTests: XCTestCase {
     func testExcludesTheAppsThatAreMeantToStayRunning() {

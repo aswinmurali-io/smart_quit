@@ -18,10 +18,10 @@ public final class AppSweeper {
 
     private let provider: RunningAppsProviding
     private let counter: WindowCounting
-    private let engine: LingerEngine
+    private let engine: QuitEngine
     private let now: () -> Date
     private let countingQueue = DispatchQueue(
-        label: "dev.aswinmurali.Lingerer.window-counting",
+        label: "dev.aswinmurali.SmartQuit.window-counting",
         qos: .utility
     )
 
@@ -34,7 +34,7 @@ public final class AppSweeper {
     public init(
         provider: RunningAppsProviding,
         counter: WindowCounting,
-        engine: LingerEngine,
+        engine: QuitEngine,
         now: @escaping () -> Date = Date.init
     ) {
         self.provider = provider

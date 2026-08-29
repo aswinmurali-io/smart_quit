@@ -1,4 +1,4 @@
-# Lingerer
+# SmartQuit
 
 A macOS menu bar utility that quits apps you've stopped using.
 
@@ -7,16 +7,16 @@ background, ready for a fast relaunch. That behaviour is genuinely useful, and
 also how you end up with thirty windowless apps holding memory at the end of a
 workday.
 
-Lingerer keeps the fast-relaunch behaviour and removes the pile-up. When an app
+SmartQuit keeps the fast-relaunch behaviour and removes the pile-up. When an app
 has had zero open windows for longer than a grace period (5 minutes by default),
-Lingerer quits it gracefully.
+SmartQuit quits it gracefully.
 
 ## Behaviour
 
 - **Windowless means windowless.** Minimized and hidden windows still count as
   windows. An app is only a candidate once it genuinely has no standard windows.
 - **Graceful only.** Quitting goes through `NSRunningApplication.terminate()`,
-  so unsaved-changes dialogs appear and nothing is lost. Lingerer never sends
+  so unsaved-changes dialogs appear and nothing is lost. SmartQuit never sends
   `SIGKILL`.
 - **The window you reopen cancels the clock.** If a window reappears before the
   grace period elapses, the pending quit is cancelled.
@@ -28,12 +28,12 @@ Lingerer quits it gracefully.
 
 - macOS 13 Ventura or later
 - Xcode command line tools (Swift 5.9 or later)
-- Accessibility permission (Lingerer reads window counts via the Accessibility
+- Accessibility permission (SmartQuit reads window counts via the Accessibility
   API; it cannot see window contents)
 
 ## Build and run
 
-Lingerer is a Swift package. There is no `.xcodeproj`: the logic lives in a
+SmartQuit is a Swift package. There is no `.xcodeproj`: the logic lives in a
 library target so it can be unit tested, and a script assembles the `.app`
 bundle a menu bar app needs.
 
@@ -41,37 +41,37 @@ bundle a menu bar app needs.
 ./Scripts/build-app.sh
 ```
 
-That builds `dist/Lingerer.app` and ad-hoc signs it. Install and launch it:
+That builds `dist/SmartQuit.app` and ad-hoc signs it. Install and launch it:
 
 ```bash
-cp -R dist/Lingerer.app ~/Applications/ && open ~/Applications/Lingerer.app
+cp -R dist/SmartQuit.app ~/Applications/ && open ~/Applications/SmartQuit.app
 ```
 
-Lingerer has no Dock icon and no window. Look for the hourglass in the menu bar.
+SmartQuit has no Dock icon and no window. Look for the hourglass in the menu bar.
 
 ### Grant Accessibility permission
 
-On first launch macOS asks for Accessibility permission. Lingerer cannot count
+On first launch macOS asks for Accessibility permission. SmartQuit cannot count
 windows without it, and will sit there doing nothing until it is granted.
 
 If you miss the prompt, open **System Settings → Privacy & Security →
-Accessibility**, then add and enable Lingerer. The menu's *Open Accessibility
+Accessibility**, then add and enable SmartQuit. The menu's *Open Accessibility
 Settings…* item takes you straight there.
 
 Because the app is ad-hoc signed, its signature changes every time you rebuild
 it. macOS ties the Accessibility grant to that signature, so after a rebuild you
-may need to remove Lingerer from the Accessibility list and add it again.
+may need to remove SmartQuit from the Accessibility list and add it again.
 
 ### Gatekeeper
 
 An ad-hoc signature is not notarised, so double-clicking the app may be blocked
-the first time. Right-click `Lingerer.app` → **Open** → **Open**, which records
+the first time. Right-click `SmartQuit.app` → **Open** → **Open**, which records
 your consent. Launching from the command line with `open` avoids this entirely.
 
 ### Launch at login
 
 The *Launch at login* toggle uses `SMAppService`, which registers the app by its
-path. Keep `Lingerer.app` somewhere stable — `~/Applications` or
+path. Keep `SmartQuit.app` somewhere stable — `~/Applications` or
 `/Applications` — or the login item will point at a file that has moved.
 
 ## Debug logging
@@ -79,13 +79,13 @@ path. Keep `Lingerer.app` somewhere stable — `~/Applications` or
 Every state transition is logged. To watch it live:
 
 ```bash
-log stream --predicate 'subsystem == "dev.aswinmurali.Lingerer"' --level debug
+log stream --predicate 'subsystem == "dev.aswinmurali.SmartQuit"' --level debug
 ```
 
 To read what already happened:
 
 ```bash
-log show --predicate 'subsystem == "dev.aswinmurali.Lingerer"' --last 1h --info --debug
+log show --predicate 'subsystem == "dev.aswinmurali.SmartQuit"' --last 1h --info --debug
 ```
 
 The `engine` category records apps becoming windowless, timers being cancelled,

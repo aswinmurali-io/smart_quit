@@ -1,5 +1,5 @@
 import Foundation
-import LingererCore
+import SmartQuitCore
 import ServiceManagement
 
 /// Login item registration.

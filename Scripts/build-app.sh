@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Builds Lingerer.app into dist/.
+# Builds SmartQuit.app into dist/.
 #
 # Swift Package Manager produces a bare executable; a menu bar app needs a
 # bundle so that LSUIElement, the bundle identifier, and SMAppService
@@ -10,7 +10,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-APP_NAME="Lingerer"
+APP_NAME="SmartQuit"
 CONFIGURATION="release"
 BUNDLE="dist/${APP_NAME}.app"
 

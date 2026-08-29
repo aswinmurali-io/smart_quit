@@ -1,6 +1,6 @@
 import AppKit
 import Foundation
-import LingererCore
+import SmartQuitCore
 
 /// The menu bar item and its menu.
 ///
@@ -13,7 +13,7 @@ import LingererCore
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let settings: Settings
-    private let engine: LingerEngine
+    private let engine: QuitEngine
     private let provider: RunningAppsProviding
     private let sweep: () -> Void
 
@@ -23,7 +23,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     init(
         settings: Settings,
-        engine: LingerEngine,
+        engine: QuitEngine,
         provider: RunningAppsProviding,
         sweep: @escaping () -> Void
     ) {
@@ -47,13 +47,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// The icon carries the app's state at a glance: an empty hourglass when
     /// nothing is waiting, a draining one when apps are on the clock, and a
-    /// dimmed icon when Lingerer is paused.
+    /// dimmed icon when SmartQuit is paused.
     func refreshIcon() {
         guard let button = statusItem.button else { return }
 
         let pending = !engine.countdowns(now: Date()).isEmpty
         let symbol = pending ? "hourglass.bottomhalf.filled" : "hourglass"
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Lingerer")
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "SmartQuit")
         image?.isTemplate = true
         button.image = image
         button.appearsDisabled = !settings.isEnabled
@@ -66,7 +66,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         } else {
             state = "nothing waiting"
         }
-        button.toolTip = "Lingerer — \(state)"
+        button.toolTip = "SmartQuit — \(state)"
     }
 
     // MARK: - Menu lifecycle
@@ -215,8 +215,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         alert.informativeText = """
             \(error.localizedDescription)
 
-            Launch at login needs Lingerer to live somewhere stable. Move \
-            Lingerer.app to your Applications folder and try again.
+            Launch at login needs SmartQuit to live somewhere stable. Move \
+            SmartQuit.app to your Applications folder and try again.
             """
         alert.runModal()
     }

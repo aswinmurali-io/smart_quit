@@ -3,7 +3,7 @@ import Foundation
 /// A single application as observed during one sweep.
 ///
 /// This is a value type with no AppKit dependency so the decision logic in
-/// ``LingerEngine`` can be exercised without a running window server.
+/// ``QuitEngine`` can be exercised without a running window server.
 public struct AppSnapshot: Equatable {
     public let pid: pid_t
     public let bundleID: String

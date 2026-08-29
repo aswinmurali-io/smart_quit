@@ -1,20 +1,20 @@
 import XCTest
-@testable import LingererCore
+@testable import SmartQuitCore
 
-final class LingerEngineTests: XCTestCase {
+final class QuitEngineTests: XCTestCase {
     private var settings: FakeSettings!
     private var terminator: SpyTerminator!
-    private var engine: LingerEngine!
+    private var engine: QuitEngine!
     private let start = Date(timeIntervalSince1970: 1_000_000)
 
     override func setUp() {
         super.setUp()
         settings = FakeSettings()
         terminator = SpyTerminator()
-        engine = LingerEngine(
+        engine = QuitEngine(
             settings: settings,
             terminator: terminator,
-            protectedBundleIDs: ["com.apple.finder", "dev.aswinmurali.Lingerer"]
+            protectedBundleIDs: ["com.apple.finder", "dev.aswinmurali.SmartQuit"]
         )
     }
 
@@ -119,7 +119,7 @@ final class LingerEngineTests: XCTestCase {
 
     func testNeverQuitsProtectedApp() {
         let finder = AppSnapshot.make(pid: 42, bundleID: "com.apple.finder", windowCount: 0)
-        let itself = AppSnapshot.make(pid: 43, bundleID: "dev.aswinmurali.Lingerer", windowCount: 0)
+        let itself = AppSnapshot.make(pid: 43, bundleID: "dev.aswinmurali.SmartQuit", windowCount: 0)
 
         engine.apply([finder, itself], now: start)
         engine.apply([finder, itself], now: start.addingTimeInterval(301))

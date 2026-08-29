@@ -1,6 +1,6 @@
 # Detection
 
-How Lingerer decides how many windows an app has, and which apps it is willing to consider at all.
+How SmartQuit decides how many windows an app has, and which apps it is willing to consider at all.
 
 ## Accessibility over CGWindowList
 
@@ -9,13 +9,13 @@ Window counts come from the Accessibility API, not `CGWindowList`.
 `CGWindowList` reports every surface the window server knows about, including
 off-screen buffers, shadows, and helper windows belonging to frameworks. An app
 with no visible windows routinely still has entries there, so counting them
-produces false negatives — Lingerer would conclude an app still has windows and
+produces false negatives — SmartQuit would conclude an app still has windows and
 never quit it.
 
 `AXUIElementCopyAttributeValue(app, kAXWindowsAttribute)` returns the windows an
 app actually vends, which matches what a person would call a window.
 
-See `AccessibilityWindowCounter` in `Sources/LingererCore/AccessibilityWindowCounter.swift`.
+See `AccessibilityWindowCounter` in `Sources/SmartQuitCore/AccessibilityWindowCounter.swift`.
 
 ## Only standard windows count
 
@@ -40,7 +40,7 @@ and quitting the app would be a surprise.
 A window count is `Int?`. `nil` means the count could not be determined.
 
 An Accessibility query fails when the app is unresponsive, when it has not
-finished launching, or when Lingerer's Accessibility permission has been
+finished launching, or when SmartQuit's Accessibility permission has been
 revoked. Reporting `0` in those cases would make every such app a quit
 candidate — a revoked permission would quit the user's entire session.
 
@@ -50,7 +50,7 @@ no such attribute rather than that the app has no windows. Real apps on a normal
 desktop — Xcode and TextEdit among them — return `kAXErrorCannotComplete`
 persistently, so this distinction is exercised constantly, not just in theory.
 
-`nil` propagates through `AppSnapshot` in `Sources/LingererCore/AppSnapshot.swift`
+`nil` propagates through `AppSnapshot` in `Sources/SmartQuitCore/AppSnapshot.swift`
 and is treated by the engine as "leave this app alone".
 
 ## Messaging timeout
@@ -77,4 +77,4 @@ helper processes. Those are windowless by design and quitting them would be
 wrong. Apps without a bundle identifier are also skipped, since exclusions are
 keyed by bundle identifier and an app without one cannot be excluded.
 
-See `WorkspaceAppsProvider` in `Sources/LingererCore/WorkspaceAppsProvider.swift`.
+See `WorkspaceAppsProvider` in `Sources/SmartQuitCore/WorkspaceAppsProvider.swift`.

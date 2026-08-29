@@ -1,5 +1,5 @@
 import XCTest
-@testable import LingererCore
+@testable import SmartQuitCore
 
 final class AccessibilityWindowCounterTests: XCTestCase {
     /// Builds a counter over a canned list of window subroles.

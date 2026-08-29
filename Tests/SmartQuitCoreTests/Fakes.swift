@@ -1,5 +1,5 @@
 import Foundation
-@testable import LingererCore
+@testable import SmartQuitCore
 
 /// Settings under full test control. Mirrors the real UserDefaults-backed type.
 final class FakeSettings: SettingsProviding {

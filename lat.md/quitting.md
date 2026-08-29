@@ -11,7 +11,7 @@ If a window reappears at any point, the clock is discarded. The next windowless
 spell starts a fresh clock rather than resuming the old one — a window that came
 back is evidence the app is in use.
 
-See `LingerEngine` in `Sources/LingererCore/LingerEngine.swift`.
+See `QuitEngine` in `Sources/SmartQuitCore/QuitEngine.swift`.
 
 ## State is keyed by pid
 
@@ -33,9 +33,9 @@ Quitting goes through `NSRunningApplication.terminate()`. Never `terminate(force
 
 The graceful path lets an app present its unsaved-changes dialog and refuse to
 quit. That refusal is the correct outcome, not a failure to work around: it is
-what keeps Lingerer from ever costing the user work.
+what keeps SmartQuit from ever costing the user work.
 
-See `WorkspaceTerminator` in `Sources/LingererCore/WorkspaceTerminator.swift`.
+See `WorkspaceTerminator` in `Sources/SmartQuitCore/WorkspaceTerminator.swift`.
 
 ## A refused quit is not retried
 
@@ -64,13 +64,13 @@ not been used for the grace period, and the user has just left it.
 
 ## Protected and excluded apps
 
-Finder and Lingerer itself are never quit, and neither is anything on the user's exclude list.
+Finder and SmartQuit itself are never quit, and neither is anything on the user's exclude list.
 
 Finder has no meaningful windowless state and quitting it degrades the system.
 Exclusions are stored by bundle identifier and seeded on first run only, so an
 app the user deliberately un-excludes does not come back on the next launch.
 
-See `DefaultExclusions` in `Sources/LingererCore/DefaultExclusions.swift`.
+See `DefaultExclusions` in `Sources/SmartQuitCore/DefaultExclusions.swift`.
 
 ## One sweep, not one timer per app
 
@@ -90,7 +90,7 @@ only. The background hop is given no access to the sweeper's state — it works
 from values captured before it starts — and the entry points assert the queue
 rather than trusting callers.
 
-See `AppSweeper` in `Sources/LingererCore/AppSweeper.swift`.
+See `AppSweeper` in `Sources/SmartQuitCore/AppSweeper.swift`.
 
 ## Grace periods
 
@@ -100,4 +100,4 @@ A per-app override takes precedence over the global value. Overrides are stored
 by bundle identifier and survive relaunches. The menu offers 1, 2, 5, 10 and 30
 minutes plus a custom value.
 
-See `Settings` in `Sources/LingererCore/Settings.swift`.
+See `Settings` in `Sources/SmartQuitCore/Settings.swift`.

@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "Lingerer",
+    name: "SmartQuit",
     platforms: [.macOS(.v13)],
     targets: [
-        .target(name: "LingererCore"),
-        .executableTarget(name: "Lingerer", dependencies: ["LingererCore"]),
-        .testTarget(name: "LingererCoreTests", dependencies: ["LingererCore"]),
+        .target(name: "SmartQuitCore"),
+        .executableTarget(name: "SmartQuit", dependencies: ["SmartQuitCore"]),
+        .testTarget(name: "SmartQuitCoreTests", dependencies: ["SmartQuitCore"]),
     ]
 )

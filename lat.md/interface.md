@@ -4,7 +4,7 @@ The menu bar item and its menu, and why the menu's content is modelled as data r
 
 ## The menu is data
 
-`MenuModel` in `Sources/LingererCore/MenuModel.swift` builds the menu as a tree of
+`MenuModel` in `Sources/SmartQuitCore/MenuModel.swift` builds the menu as a tree of
 `MenuNode` values. `StatusItemController` renders that tree into AppKit and
 dispatches the resulting actions.
 
@@ -18,7 +18,7 @@ is asserted in `MenuModelTests`.
 When Accessibility permission is missing, the warning and the link to System
 Settings come before everything else.
 
-Without that permission Lingerer cannot see windows, so nothing else in the menu
+Without that permission SmartQuit cannot see windows, so nothing else in the menu
 has any effect. Settings the user cannot act on should not sit above the reason
 they cannot act on them.
 
@@ -34,7 +34,7 @@ is not.
 ## The icon carries state
 
 The status item is an hourglass: empty when nothing is waiting, bottom-half
-filled when apps are on the clock, dimmed when Lingerer is paused.
+filled when apps are on the clock, dimmed when SmartQuit is paused.
 
 This was a `moon.zzz` glyph, which sat a few slots away from the system Focus
 moon in the menu bar and read as a duplicate of it.
