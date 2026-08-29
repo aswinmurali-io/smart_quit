@@ -95,6 +95,20 @@ and reads the mount point back from `hdiutil` rather than assuming it.
 Scripting Finder needs Automation permission. Refused, the layout is skipped and
 reported rather than failing the build: an unarranged image still installs.
 
+## Window bounds are the frame, not the canvas
+
+The window is asked for the background's height plus a title bar, and the path and status bars are switched off.
+
+Finder's `bounds` measures the whole frame, chrome included, while the icons and
+the background sit in what is left underneath. Asking for 400pt therefore gave a
+347pt canvas — 400 less a 28pt title bar and a 25pt path bar — so icons centred
+against 400 sat low, and the bottom of the background was never on screen.
+
+The path and status bars are Finder-wide preferences, so they arrive switched on
+for anyone who uses them and the canvas is a different size for different people.
+Turning both off leaves the title bar as the only chrome, which is a known 28pt
+and can simply be added back.
+
 ## Distribution needs Developer ID and notarization
 
 `Scripts/release.sh` produces the stapled disk image; `Scripts/build-app.sh` produces something only this machine will run.

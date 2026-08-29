@@ -33,6 +33,14 @@ RW_IMAGE="build/dmg-rw.dmg"
 # these two points. Change one and you must change the other.
 WINDOW_WIDTH=640
 WINDOW_HEIGHT=400
+
+# Finder's window "bounds" measures the whole frame, chrome included, while the
+# icons and the background live in what is left underneath it. Asking for a
+# 400pt window therefore gave a 347pt canvas — 400 less the title bar and the
+# path bar — and centring the icons in 400 sat them low in 347. The path and
+# status bars are turned off below, so the title bar is all that remains to add
+# back.
+TITLE_BAR_HEIGHT=28
 ICON_CENTER_Y=190
 APP_ICON_X=170
 APPLICATIONS_X=470
@@ -112,7 +120,11 @@ tell application "Finder"
         set current view of container window to icon view
         set toolbar visible of container window to false
         set statusbar visible of container window to false
-        set the bounds of container window to {200, 120, $((200 + WINDOW_WIDTH)), $((120 + WINDOW_HEIGHT))}
+        -- The path bar is the strip along the bottom. It is a Finder-wide
+        -- preference, so it arrives switched on for anyone who uses it, eating
+        -- into the canvas the background was drawn for.
+        set pathbar visible of container window to false
+        set the bounds of container window to {200, 120, $((200 + WINDOW_WIDTH)), $((120 + WINDOW_HEIGHT + TITLE_BAR_HEIGHT))}
 
         set viewOptions to the icon view options of container window
         set arrangement of viewOptions to not arranged
