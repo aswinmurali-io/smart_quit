@@ -87,6 +87,29 @@ codesign --verify --strict --verbose=2 "${BUNDLE}"
 
 ./Scripts/make-dmg.sh
 
+# MARK: Sign the container
+#
+# Signed after the image is built, never before: hdiutil rewrites the file when
+# it converts to the compressed format, which drops any signature already there.
+# make-dmg.sh leaves it unsigned for that reason, and because an image it builds
+# on its own is not distributable anyway.
+#
+# The identifier is pinned. Left to itself codesign derives one from the file
+# name and truncates at the first dot, so SmartQuit-0.1.0.dmg signs as
+# "SmartQuit-0" — a different identifier every release, and a wrong-looking one.
+#
+# A real --timestamp, not --timestamp=none: notarization rejects a signature
+# without a secure timestamp.
+
+echo "==> Signing the disk image"
+codesign --force \
+    --sign "${DEVELOPER_ID}" \
+    --identifier "com.smartquit.SmartQuit.dmg" \
+    --timestamp \
+    "${DMG}"
+
+codesign --verify --verbose=2 "${DMG}"
+
 # MARK: Notarize
 #
 # The disk image is submitted rather than the app: stapling to the .dmg means a

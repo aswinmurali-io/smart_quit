@@ -122,6 +122,22 @@ The disk image is what gets notarized and stapled, not the app inside it: a
 stapled `.dmg` can be verified offline, where stapling the app alone leaves the
 container unchecked.
 
+The image is signed too, and only in `release.sh`. It has to happen after the
+image exists — `hdiutil` rewrites the file when it compresses, dropping any
+signature already on it — which is why `make-dmg.sh` leaves it unsigned, that
+and an image it builds alone being undistributable regardless.
+
+Its identifier is pinned to `com.smartquit.SmartQuit.dmg`. Left to itself
+`codesign` derives one from the file name and truncates at the first dot, so
+`SmartQuit-0.1.0.dmg` signs as `SmartQuit-0`: a different identifier every
+release. The signature also needs a real `--timestamp`, because notarization
+rejects one without a secure timestamp.
+
+Note that modifying a signed image reads as `code object is not signed at all`
+rather than as an invalid signature — the signature sits at the end of the file,
+so a change destroys the trailer instead of failing a hash. It is caught either
+way, but the message points at the wrong thing.
+
 `Resources/SmartQuit.entitlements` is deliberately empty. The app loads no
 plug-ins, generates no code and reads no protected data; the Accessibility and
 Apple Events access it needs is granted by the user at runtime, not by an
