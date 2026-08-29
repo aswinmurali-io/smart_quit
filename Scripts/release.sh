@@ -90,7 +90,7 @@ codesign --verify --strict --verbose=2 "${BUNDLE}"
 
 # MARK: Package
 
-./Scripts/make-dmg.sh
+SMARTQUIT_WILL_NOTARIZE=1 ./Scripts/make-dmg.sh
 
 # MARK: Sign the container
 #

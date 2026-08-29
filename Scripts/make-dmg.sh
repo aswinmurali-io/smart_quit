@@ -194,7 +194,12 @@ rm -rf "${STAGING}" "${RW_IMAGE}"
 echo
 [[ "${ARRANGED}" == "1" ]] || echo "Layout: default (Finder was not scriptable)."
 
-if spctl --assess --type open --context context:primary-signature "${DMG}" 2>/dev/null; then
+if [[ -n "${SMARTQUIT_WILL_NOTARIZE:-}" ]]; then
+    # Called from release.sh, which signs and notarizes this image next. The
+    # advisory below would be true at this instant and false a minute later,
+    # which is worse than saying nothing.
+    echo "Built ${DMG} — signing and notarization to follow."
+elif spctl --assess --type open --context context:primary-signature "${DMG}" 2>/dev/null; then
     echo "Notarized: this installs cleanly anywhere."
 else
     echo "Built ${DMG} — NOT notarized."

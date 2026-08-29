@@ -122,6 +122,17 @@ The disk image is what gets notarized and stapled, not the app inside it: a
 stapled `.dmg` can be verified offline, where stapling the app alone leaves the
 container unchecked.
 
+Only the image carries a ticket, though, so an app dragged out of it has none of
+its own. Gatekeeper then asks Apple on first launch, which is fine online and a
+gap offline. Closing it means notarizing twice — the app, stapled, then the
+image built around it — which is a second round trip through the notary service
+for a case nobody has hit.
+
+`make-dmg.sh` reports the image as unnotarized because, on its own, it is.
+`release.sh` sets `SMARTQUIT_WILL_NOTARIZE` to suppress that: the warning is
+true when it prints and false a minute later, which is worse than saying
+nothing.
+
 The image is signed too, and only in `release.sh`. It has to happen after the
 image exists — `hdiutil` rewrites the file when it compresses, dropping any
 signature already on it — which is why `make-dmg.sh` leaves it unsigned, that
