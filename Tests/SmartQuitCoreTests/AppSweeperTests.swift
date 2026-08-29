@@ -183,3 +183,24 @@ extension AppSweeperTests {
         XCTAssertEqual(terminator.terminated, [1])
     }
 }
+
+// MARK: - Reporting the last sweep
+
+extension AppSweeperTests {
+    /// The menu lists apps that have windows, which only the sweep has seen —
+    /// the engine drops them as soon as it knows they are not candidates.
+    func testKeepsTheSnapshotsFromTheLastSweep() {
+        let sweeper = self.sweeper(terminator: SpyTerminator())
+        provider.apps = [.make(pid: 1, name: "Safari"), .make(pid: 2, name: "Notes")]
+        counter.countsByPID = [1: 3, 2: 0]
+
+        sweepAndWait(sweeper)
+
+        XCTAssertEqual(sweeper.lastSweep.map(\.name), ["Safari", "Notes"])
+        XCTAssertEqual(sweeper.lastSweep.map(\.windowCount), [3, 0])
+    }
+
+    func testReportsNoSnapshotsBeforeTheFirstSweep() {
+        XCTAssertTrue(sweeper(terminator: SpyTerminator()).lastSweep.isEmpty)
+    }
+}

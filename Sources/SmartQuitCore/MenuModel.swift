@@ -65,7 +65,8 @@ public enum MenuModel {
         isAccessibilityGranted: Bool,
         isLaunchAtLoginEnabled: Bool,
         version: String?,
-        foregroundAppName: String?
+        foregroundAppName: String?,
+        openApps: [AppSnapshot]
     ) -> [MenuNode] {
         var nodes: [MenuNode] = []
 
@@ -111,6 +112,7 @@ public enum MenuModel {
             isEnabled: settings.isEnabled,
             isAccessibilityGranted: isAccessibilityGranted
         )
+        nodes.append(windowedAppsMenu(openApps))
         nodes.append(.separator)
         nodes.append(gracePeriodMenu(settings: settings, apps: apps))
         nodes.append(exclusionsMenu(settings: settings, apps: apps))
@@ -210,6 +212,34 @@ public enum MenuModel {
 
         guard !notes.isEmpty else { return "\(countdown.name) — \(value)" }
         return "\(countdown.name) — \(value) (\(notes.joined(separator: ", ")))"
+    }
+
+    /// The apps that currently have windows, as a submenu.
+    ///
+    /// A submenu rather than an inline list: this is usually the longest thing
+    /// the menu knows about, where the clock above it is usually empty, and a
+    /// dozen rows between the two switches and the settings would bury both.
+    /// The count sits in the title so it reads without opening.
+    private static func windowedAppsMenu(_ openApps: [AppSnapshot]) -> MenuNode {
+        // An unreadable count is not evidence of a window, the same way it is
+        // not evidence of none.
+        let windowed = openApps
+            .filter { ($0.windowCount ?? 0) > 0 }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        guard !windowed.isEmpty else {
+            return MenuNode(
+                title: "With windows — 0",
+                kind: .submenu([.label("No apps showing windows")])
+            )
+        }
+
+        let children = windowed.map { app -> MenuNode in
+            let count = app.windowCount ?? 0
+            let windows = count == 1 ? "1 window" : "\(count) windows"
+            return .label("\(app.name) — \(windows)")
+        }
+        return MenuNode(title: "With windows — \(windowed.count)", kind: .submenu(children))
     }
 
     private static func gracePeriodMenu(settings: Settings, apps: [RunningApp]) -> MenuNode {

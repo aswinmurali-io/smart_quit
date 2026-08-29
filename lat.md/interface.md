@@ -133,3 +133,22 @@ the moment the menu needs it — asking at that point answers nothing, every tim
 `StatusItemController` observes `NSWorkspace.didActivateApplicationNotification`
 instead, filtering to regular apps by the same rule `regularApps()` uses. That
 filter is what keeps Smart Quit itself from becoming the answer.
+
+## Apps with windows are a submenu
+
+"With windows — 5" opens onto one row per app, each with its window count.
+
+A submenu rather than an inline list. This is usually the longest thing the menu
+knows about, where the clock above it is usually empty, and a dozen rows sitting
+between the two switches and the settings would bury both. The count is in the
+title so it reads without opening.
+
+The rows come from the last sweep, held by `AppSweeper` because nothing else
+holds it: the engine drops an app the moment it knows it is not a candidate, so
+apps that have windows exist nowhere else by the time the menu wants them.
+
+They are counted by the same rule the quitting logic uses, so an app whose only
+window has no standard subrole — Finder and its desktop — is absent from this
+list for the same reason it is a quit candidate elsewhere. An unreadable count
+keeps an app out too: it is not evidence of a window, the same way it is not
+evidence of none.

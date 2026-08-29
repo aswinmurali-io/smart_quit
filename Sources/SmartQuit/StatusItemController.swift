@@ -16,6 +16,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let engine: QuitEngine
     private let provider: RunningAppsProviding
     private let sweep: () -> Void
+    /// What the last sweep saw, for the list of apps that have windows.
+    private let openApps: () -> [AppSnapshot]
 
     /// Countdown rows currently on screen, so they can tick without a rebuild.
     private var countdownItems: [String: NSMenuItem] = [:]
@@ -41,13 +43,15 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         settings: Settings,
         engine: QuitEngine,
         provider: RunningAppsProviding,
-        sweep: @escaping () -> Void
+        sweep: @escaping () -> Void,
+        openApps: @escaping () -> [AppSnapshot]
     ) {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.settings = settings
         self.engine = engine
         self.provider = provider
         self.sweep = sweep
+        self.openApps = openApps
         super.init()
 
         let menu = NSMenu()
@@ -181,7 +185,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             isAccessibilityGranted: AccessibilityPermission.isGranted,
             isLaunchAtLoginEnabled: LaunchAtLogin.isEnabled,
             version: AppInfo.version,
-            foregroundAppName: lastForegroundApp
+            foregroundAppName: lastForegroundApp,
+            openApps: openApps()
         )
     }
 

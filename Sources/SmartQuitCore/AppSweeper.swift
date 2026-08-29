@@ -38,6 +38,15 @@ public final class AppSweeper {
     /// Called after each sweep so the UI can refresh.
     public var onSweepCompleted: (() -> Void)?
 
+    /// What the last sweep saw.
+    ///
+    /// Kept here because nothing else keeps it: the engine drops an app the
+    /// moment it knows it is not a candidate, so apps that have windows exist
+    /// nowhere else by the time the menu wants to list them.
+    ///
+    /// - Important: Main queue only, like the rest of this type.
+    public private(set) var lastSweep: [AppSnapshot] = []
+
     public init(
         provider: RunningAppsProviding,
         counter: WindowCounting,
@@ -111,6 +120,7 @@ public final class AppSweeper {
                 let frontmost = self.provider.frontmostPID()
                 let fresh = snapshots.map { $0.withFrontmost($0.pid == frontmost) }
 
+                self.lastSweep = fresh
                 self.engine.apply(fresh, now: self.now())
                 self.isSweeping = false
                 self.onSweepCompleted?()

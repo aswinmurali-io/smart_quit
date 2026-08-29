@@ -22,7 +22,8 @@ final class MenuModelTests: XCTestCase {
         accessibilityGranted: Bool = true,
         launchAtLogin: Bool = false,
         version: String? = "0.1.0",
-        foregroundApp: String? = nil
+        foregroundApp: String? = nil,
+        openApps: [AppSnapshot] = []
     ) -> [MenuNode] {
         MenuModel.build(
             settings: settings,
@@ -31,7 +32,8 @@ final class MenuModelTests: XCTestCase {
             isAccessibilityGranted: accessibilityGranted,
             isLaunchAtLoginEnabled: launchAtLogin,
             version: version,
-            foregroundAppName: foregroundApp
+            foregroundAppName: foregroundApp,
+            openApps: openApps
         )
     }
 
@@ -57,6 +59,7 @@ final class MenuModelTests: XCTestCase {
             "Pause apps playing audio",
             "On the clock — checks every 3s",
             "Nothing waiting to quit",
+            "With windows — 0",
             "Grace period — 5 minutes",
             "Excluded apps",
             "Open Accessibility Settings…",
@@ -412,5 +415,67 @@ extension MenuModelTests {
         let clock = try XCTUnwrap(nodes.firstIndex { $0.title.hasPrefix("On the clock") })
 
         XCTAssertEqual(clock, front + 1)
+    }
+}
+
+// MARK: - Apps with windows
+
+extension MenuModelTests {
+    private func windowed(_ nodes: [MenuNode]) -> [MenuNode] {
+        guard let node = nodes.first(where: { $0.title.hasPrefix("With windows") }),
+              case .submenu(let children) = node.kind
+        else { return [] }
+        return children
+    }
+
+    func testCountsTheAppsShowingWindows() {
+        let nodes = build(openApps: [
+            .make(pid: 1, name: "Safari", windowCount: 2),
+            .make(pid: 2, name: "Xcode", windowCount: 1),
+            .make(pid: 3, name: "Notes", windowCount: 0),
+        ])
+
+        XCTAssertTrue(nodes.contains { $0.title == "With windows — 2" })
+    }
+
+    func testListsEachAppWithItsWindowCount() {
+        let children = windowed(build(openApps: [
+            .make(pid: 1, name: "Safari", windowCount: 2),
+            .make(pid: 2, name: "Xcode", windowCount: 1),
+        ]))
+
+        XCTAssertEqual(children.map(\.title), ["Safari — 2 windows", "Xcode — 1 window"])
+    }
+
+    /// A windowless app belongs on the clock, not in this list.
+    func testLeavesOutAppsWithNoWindows() {
+        let children = windowed(build(openApps: [.make(pid: 1, name: "Notes", windowCount: 0)]))
+
+        XCTAssertEqual(children.map(\.title), ["No apps showing windows"])
+    }
+
+    /// An unreadable count is not evidence of a window, the same way it is not
+    /// evidence of none.
+    func testLeavesOutAppsWhoseCountIsUnknown() {
+        let children = windowed(build(openApps: [.make(pid: 1, name: "Xcode", windowCount: nil)]))
+
+        XCTAssertEqual(children.map(\.title), ["No apps showing windows"])
+    }
+
+    func testSortsAppsWithWindowsByName() {
+        let children = windowed(build(openApps: [
+            .make(pid: 1, name: "Xcode", windowCount: 1),
+            .make(pid: 2, name: "Finder", windowCount: 1),
+            .make(pid: 3, name: "safari", windowCount: 1),
+        ]))
+
+        XCTAssertEqual(children.map(\.title).map { String($0.prefix(6)) }, ["Finder", "safari", "Xcode "])
+    }
+
+    func testTheWindowRowsAreNotActionable() {
+        let children = windowed(build(openApps: [.make(pid: 1, name: "Safari", windowCount: 1)]))
+
+        XCTAssertEqual(children.first?.kind, .label)
+        XCTAssertEqual(children.first?.isEnabled, false)
     }
 }
