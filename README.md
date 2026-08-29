@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/macOS-14.2%2B-000000?logo=apple&logoColor=white" alt="macOS 14.2+">
   <img src="https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white" alt="Swift 5.9">
   <img src="https://img.shields.io/badge/AppKit-menu%20bar-1575F9" alt="AppKit menu bar">
-  <img src="https://img.shields.io/badge/licence-Apache%202.0-blue" alt="Apache 2.0">
+  <img src="https://img.shields.io/badge/licence-GPL%20v3-blue" alt="GPL v3">
 </p>
 
 <p align="center">
@@ -225,4 +225,16 @@ report it privately — see [SECURITY.md](.github/SECURITY.md).
 
 ## Licence
 
-Apache License 2.0 — see [LICENSE](LICENSE).
+GNU General Public License v3.0 — see [LICENSE](LICENSE).
+
+Copyright © 2026 Aswin Murali.
+
+Smart Quit is free software. Use it, read it, change it, pass it on. The one
+condition is that anything you build out of it stays free the same way: ship the
+source under the GPL too, and keep the copyright notice. A fork that goes closed
+is the thing this licence exists to prevent.
+
+That choice rules out the Mac App Store, whose terms add restrictions the GPL
+forbids and whose signing model conflicts with the right to run your own build.
+Smart Quit is distributed as a notarized `.dmg` instead, which is where
+[Packaging](lat.md/packaging.md) already pointed it.

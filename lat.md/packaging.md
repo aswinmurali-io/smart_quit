@@ -170,6 +170,47 @@ Apple Events access it needs is granted by the user at runtime, not by an
 entitlement. The file exists so that set is stated rather than inferred from its
 absence.
 
+## The licence is GPL-3.0, and the `.dmg` is the only channel it allows
+
+Smart Quit is under the GNU General Public License v3.0, which keeps forks open
+and, in the same stroke, rules the Mac App Store out.
+
+A permissive licence would let a fork go closed, which is the one outcome the
+project has no answer to: the app asks for Accessibility, and a user's reason to
+grant it is that the source is there to read. That argument only holds if it
+holds for every copy, so the licence has to travel with the code.
+
+The cost is the App Store. Apple's Licensed Application EULA caps devices,
+forbids redistribution and wraps the binary in DRM — restrictions GPL-3.0 §10
+forbids adding on top of the rights it grants. GPL-3.0 §6 asks separately for
+whatever a user needs to install their own modified build on the device, and
+Apple's signature is not ours to hand over. Either clause alone closes that door.
+
+So the notarized disk image is not one distribution route among several, it is
+the route. The Developer ID signing and stapling described above are what make
+it a route a user can take without being told to defeat Gatekeeper. Reopening
+the App Store option would mean dual-licensing, which stays possible only while
+one person holds the copyright — a contributor who submits under the GPL ends
+it, absent a CLA.
+
+Every source file carries the licence as two SPDX lines rather than the FSF's
+fifteen-line banner:
+
+```
+// SPDX-FileCopyrightText: 2026 Aswin Murali
+// SPDX-License-Identifier: GPL-3.0-only
+```
+
+The banner says the same thing at seven times the length, and most files here
+are shorter than it is — `AppTerminating.swift` is ten lines. A header that
+outweighs its file gets skimmed past, and the point of a per-file notice is that
+a file which travels alone still says what it is. `GPL-3.0-only`, not
+`-or-later`: a later GPL is a licence nobody has read yet.
+
+A new file needs the two lines, and they go second where something else has
+claim on the first: the shebang in `Scripts/`, `swift-tools-version` in
+`Package.swift`. Both are read positionally and break if displaced.
+
 ## The icon and the disk image background are drawn, not checked in
 
 `Scripts/make-icon.swift` renders the `.icns` from paths, and `Scripts/make-dmg-background.swift` the disk image's backdrop.

@@ -1,4 +1,6 @@
 #!/usr/bin/env swift
+// SPDX-FileCopyrightText: 2026 Aswin Murali
+// SPDX-License-Identifier: GPL-3.0-only
 //
 // Draws the disk image's window background into build/dmg-background/.
 //

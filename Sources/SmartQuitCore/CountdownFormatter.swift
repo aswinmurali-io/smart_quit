@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Aswin Murali
+// SPDX-License-Identifier: GPL-3.0-only
+
 import Foundation
 
 /// Renders durations for the menu.

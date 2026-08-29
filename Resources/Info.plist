@@ -35,6 +35,6 @@
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Smart Quit asks apps that have been left without windows to quit.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Aswin Murali. Licensed under the Apache License 2.0.</string>
+	<string>Copyright © 2026 Aswin Murali. Licensed under the GNU General Public License v3.0.</string>
 </dict>
 </plist>

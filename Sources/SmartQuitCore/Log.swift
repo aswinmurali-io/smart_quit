@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Aswin Murali
+// SPDX-License-Identifier: GPL-3.0-only
+
 import Foundation
 import os
 
