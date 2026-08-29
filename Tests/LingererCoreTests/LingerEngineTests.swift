@@ -199,6 +199,26 @@ final class LingerEngineTests: XCTestCase {
         XCTAssertEqual(terminator.terminated, [])
     }
 
+    func testDoesNotLetANewAppInheritTheClockOfARecycledPID() {
+        engine.apply([.make(pid: 42, bundleID: "com.example.Old", windowCount: 0)], now: start)
+
+        // The old app quits and a different one is given the same pid before
+        // the next sweep, so the terminate notification never cleared it.
+        engine.apply(
+            [.make(pid: 42, bundleID: "com.example.New", windowCount: 0)],
+            now: start.addingTimeInterval(301)
+        )
+
+        XCTAssertEqual(terminator.terminated, [])
+    }
+
+    func testReportsTheCurrentNameForARecycledPID() {
+        engine.apply([.make(pid: 42, bundleID: "com.example.Old", name: "Old", windowCount: 0)], now: start)
+        engine.apply([.make(pid: 42, bundleID: "com.example.New", name: "New", windowCount: 0)], now: start)
+
+        XCTAssertEqual(engine.countdowns(now: start).map(\.name), ["New"])
+    }
+
     func testDropsAppsThatDisappearFromTheSweep() {
         engine.apply([.make(pid: 42, windowCount: 0)], now: start)
 

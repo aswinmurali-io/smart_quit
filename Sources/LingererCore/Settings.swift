@@ -42,7 +42,13 @@ public final class Settings: SettingsProviding {
     }
 
     public var globalGracePeriod: TimeInterval {
-        get { defaults.double(forKey: Key.globalGracePeriod) }
+        // Clamped on read as well as write: a value written directly to the
+        // defaults domain bypasses the setter, and a non-positive grace period
+        // would make every windowless app due on its first sweep.
+        get {
+            let stored = defaults.double(forKey: Key.globalGracePeriod)
+            return stored > 0 ? stored : Self.defaultGracePeriod
+        }
         set {
             guard newValue > 0 else { return }
             defaults.set(newValue, forKey: Key.globalGracePeriod)
@@ -52,7 +58,10 @@ public final class Settings: SettingsProviding {
     // MARK: - Exclusions
 
     public var excludedBundleIDs: Set<String> {
-        Set(defaults.stringArray(forKey: Key.excludedBundleIDs) ?? [])
+        // compactMap rather than stringArray(forKey:), which returns nil for
+        // the whole array if any element is not a string. Losing every
+        // exclusion to one bad entry would make protected apps quittable.
+        Set((defaults.array(forKey: Key.excludedBundleIDs) ?? []).compactMap { $0 as? String })
     }
 
     public func isExcluded(bundleID: String) -> Bool {
@@ -72,7 +81,12 @@ public final class Settings: SettingsProviding {
     // MARK: - Per-app grace periods
 
     private var overrides: [String: TimeInterval] {
-        get { defaults.dictionary(forKey: Key.gracePeriodOverrides) as? [String: TimeInterval] ?? [:] }
+        // Per value rather than all-or-nothing, for the same reason as above.
+        get {
+            (defaults.dictionary(forKey: Key.gracePeriodOverrides) ?? [:])
+                .compactMapValues { ($0 as? NSNumber)?.doubleValue }
+                .filter { $0.value > 0 }
+        }
         set { defaults.set(newValue, forKey: Key.gracePeriodOverrides) }
     }
 

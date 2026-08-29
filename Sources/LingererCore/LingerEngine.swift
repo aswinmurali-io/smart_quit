@@ -24,7 +24,7 @@ public final class LingerEngine {
     /// An app being tracked, with enough identity to render it in the menu.
     private struct Tracked {
         let bundleID: String
-        let name: String
+        var name: String
         var state: State
     }
 
@@ -83,6 +83,13 @@ public final class LingerEngine {
             return
         }
 
+        // Pids are recycled. If a different app now holds this one, the state
+        // belongs to the process that died, not to this one.
+        if let entry = tracked[app.pid], entry.bundleID != app.bundleID {
+            Log.engine.debug("pid \(app.pid) is now \(app.bundleID, privacy: .public) — resetting")
+            tracked[app.pid] = nil
+        }
+
         guard let state = tracked[app.pid]?.state else {
             tracked[app.pid] = Tracked(
                 bundleID: app.bundleID,
@@ -95,6 +102,8 @@ public final class LingerEngine {
             )
             return
         }
+
+        tracked[app.pid]?.name = app.name
 
         switch state {
         case .windowless(let since):
@@ -113,6 +122,7 @@ public final class LingerEngine {
                 )
                 tracked[app.pid]?.state = .surrendered
             } else {
+                Log.engine.info("\(app.name, privacy: .public) quit")
                 tracked[app.pid] = nil
             }
 

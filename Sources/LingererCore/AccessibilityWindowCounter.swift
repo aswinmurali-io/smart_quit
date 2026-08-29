@@ -16,6 +16,16 @@ public final class AccessibilityWindowCounter: WindowCounting {
     /// elements are `nil` when a window has no subrole.
     typealias SubroleReader = (pid_t) -> [String?]?
 
+    /// What an Accessibility error means for counting windows.
+    enum Outcome: Equatable {
+        /// The query succeeded; read the windows out of the value.
+        case windows
+        /// The app answered and has no windows.
+        case none
+        /// The count could not be determined.
+        case unknown
+    }
+
     /// How long to wait on an unresponsive app before giving up on it.
     ///
     /// Accessibility calls are synchronous, so without a short timeout a single
@@ -29,7 +39,26 @@ public final class AccessibilityWindowCounter: WindowCounting {
     }
 
     public convenience init() {
+        // The timeout must be set on the system-wide element to apply to this
+        // process as a whole. Setting it on an application element covers only
+        // messages to that element — not to the window elements it returns, so
+        // the per-window subrole queries would still wait out the 6s default.
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), Self.messagingTimeout)
         self.init(readSubroles: Self.readSubrolesViaAccessibility)
+    }
+
+    /// Maps an Accessibility error onto what it means for a window count.
+    ///
+    /// Only `noValue` means "no windows". Everything else that is not a success
+    /// is unknown — in particular `attributeUnsupported`, which says the element
+    /// has no such attribute, not that the app has no windows. Reporting zero
+    /// there would make the app a quit candidate.
+    static func outcome(for result: AXError) -> Outcome {
+        switch result {
+        case .success: return .windows
+        case .noValue: return .none
+        default: return .unknown
+        }
     }
 
     public func standardWindowCount(pid: pid_t) -> Int? {
@@ -41,19 +70,17 @@ public final class AccessibilityWindowCounter: WindowCounting {
 
     private static func readSubrolesViaAccessibility(pid: pid_t) -> [String?]? {
         let app = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(app, messagingTimeout)
 
         var value: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value)
 
-        switch result {
-        case .success:
+        switch outcome(for: result) {
+        case .windows:
             guard let windows = value as? [AXUIElement] else { return nil }
             return windows.map(subrole(of:))
-        case .noValue, .attributeUnsupported:
-            // The app is reachable and simply has no windows attribute.
+        case .none:
             return []
-        default:
+        case .unknown:
             Log.windows.debug("Window query for pid \(pid) failed: \(result.rawValue)")
             return nil
         }

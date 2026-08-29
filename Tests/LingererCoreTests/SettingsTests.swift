@@ -103,4 +103,33 @@ final class SettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.globalGracePeriod, 300)
     }
+
+    /// A stored value can be non-positive even though the setter refuses one —
+    /// `defaults write` reaches around it. A grace period of zero or less makes
+    /// every windowless app due on its first sweep, so it must not be honoured.
+    func testIgnoresAStoredGracePeriodThatIsNotPositive() {
+        defaults.set(-1.0, forKey: "globalGracePeriod")
+
+        XCTAssertEqual(Settings(defaults: defaults).globalGracePeriod, 300)
+    }
+
+    /// Losing the whole exclusion list to one bad entry would make every
+    /// protected app quittable, so a malformed entry must cost only itself.
+    func testKeepsValidExclusionsWhenAStoredEntryIsNotAString() {
+        defaults.set(true, forKey: "hasSeededExclusions")
+        defaults.set(["com.example.Good", 42], forKey: "excludedBundleIDs")
+
+        XCTAssertEqual(Settings(defaults: defaults).excludedBundleIDs, ["com.example.Good"])
+    }
+
+    func testKeepsValidOverridesWhenAStoredEntryIsNotANumber() {
+        defaults.set(
+            ["com.example.Good": 60.0, "com.example.Bad": "not a number"],
+            forKey: "gracePeriodOverrides"
+        )
+        let settings = Settings(defaults: defaults)
+
+        XCTAssertEqual(settings.gracePeriod(forBundleID: "com.example.Good"), 60)
+        XCTAssertEqual(settings.gracePeriod(forBundleID: "com.example.Bad"), 300)
+    }
 }
