@@ -28,8 +28,8 @@ with every unsaved-changes dialog intact.
 
 It lives in the menu bar. No Dock icon, no window, no preferences pane.
 
-The built app is 1.3 MB — native Swift and AppKit, no Electron, no bundled
-runtime, no background daemon.
+**The built app is 1.3 MB — native Swift and AppKit, no Electron, no bundled
+runtime, no background daemon**.
 
 ## What it looks like
 
