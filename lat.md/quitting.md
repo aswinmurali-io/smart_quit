@@ -28,8 +28,8 @@ menu shows it, which is the point — a hidden app is not obviously safe.
 
 The pause state observed at the end of one sweep decides whether the interval
 that follows counts, so audio starting or stopping mid-interval is credited to
-the nearest sweep. At a fifteen second sweep against a grace period measured in
-minutes, that error is not perceivable.
+the nearest sweep. Against a grace period measured in minutes, that error is
+not perceivable.
 
 Spotify is deliberately not in the default exclusions: the pause covers it
 better than an exclusion, which would leave it running forever once the music
@@ -72,7 +72,7 @@ An app that survives a quit request is not asked again until it shows a window.
 
 `terminate()` returning `false`, or the app still running ten seconds later, both
 move it to a `surrendered` state. Without that state the app would come back up
-for consideration on the next sweep and be asked to quit every fifteen seconds
+for consideration on the next sweep and be asked to quit on every one of them
 forever — a dialog storm for an app with unsaved work.
 
 Showing a window clears the state and makes the app eligible again.
@@ -108,7 +108,13 @@ See `DefaultExclusions` in `Sources/SmartQuitCore/DefaultExclusions.swift`.
 
 ## One sweep, not one timer per app
 
-A single repeating fifteen-second timer sweeps every application.
+A single repeating timer sweeps every application, every three seconds.
+
+A sweep costs about five milliseconds once the Accessibility caches are warm, so
+the interval is not set by how long the work takes. It is set by what the work
+is: a round trip to every running application, which wakes each of them. That is
+why this is seconds rather than milliseconds, and why it is a poor thing to do
+more often than the answer can change.
 
 A timer per app would mean dozens of timers waking the CPU independently. One
 sweep also gives a consistent view: every decision in a pass is made against the

@@ -14,7 +14,12 @@ import Foundation
 ///   trusting callers.
 public final class AppSweeper {
     /// How often the system is swept.
-    public static let interval: TimeInterval = 15
+    ///
+    /// A sweep costs about five milliseconds once the Accessibility caches are
+    /// warm, so the interval is not bounded by processing time. What it does
+    /// cost is a round trip to every running application, which wakes each of
+    /// them — the reason this is seconds rather than milliseconds.
+    public static let interval: TimeInterval = 3
 
     private let provider: RunningAppsProviding
     private let counter: WindowCounting

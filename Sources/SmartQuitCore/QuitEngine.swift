@@ -51,9 +51,9 @@ public final class QuitEngine {
         ///
         /// The interval that just ended is credited according to the pause
         /// state at its start, so audio beginning mid-interval still costs the
-        /// app that interval. At a fifteen second sweep the error is bounded by
-        /// one sweep in either direction, which no user can perceive against a
-        /// grace period measured in minutes.
+        /// app that interval. The error is bounded by one sweep in either
+        /// direction, which no user can perceive against a grace period
+        /// measured in minutes.
         func advanced(to now: Date, isPaused: Bool) -> Clock {
             Clock(served: served(at: now), lastSeen: now, isPaused: isPaused)
         }

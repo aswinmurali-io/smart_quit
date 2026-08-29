@@ -38,7 +38,7 @@ runtime, no background daemon**.
 ✓ Pause apps playing audio
 ──────────────────────────────
   In front — Safari
-  On the clock — checks every 15s
+  On the clock — checks every 3s
     Preview — 2m 15s
     Notes — 4m 03s
     Spotify — paused (playing audio)
@@ -91,7 +91,7 @@ stateDiagram-v2
     L --> W: a window reappears
 ```
 
-One timer sweeps every app every 15 seconds — not a timer per app.
+One timer sweeps every app every 3 seconds — not a timer per app.
 
 **Paused** holds the clock rather than resetting it. Close Spotify's window
 mid-album and it stops counting down; when the music ends it resumes from the
@@ -99,7 +99,7 @@ time it had left, not from the top.
 
 An app that refuses to quit lands in **Left alone** and is never asked again
 until it shows a window. Otherwise an app holding unsaved work would get a save
-dialog every 15 seconds, forever.
+dialog every few seconds, forever.
 
 ## What it will never quit
 
