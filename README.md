@@ -131,7 +131,7 @@ For a disk image instead:
 ./Scripts/make-dmg.sh
 ```
 
-That writes `dist/SmartQuit-0.2.0.dmg` — a drag-to-Applications installer, named
+That writes `dist/SmartQuit-0.2.1.dmg` — a drag-to-Applications installer, named
 for the version in `Info.plist`. It works on the Mac that built it; handing it
 to someone else needs the notarised build below.
 

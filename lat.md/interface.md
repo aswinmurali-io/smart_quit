@@ -103,7 +103,7 @@ one that is going nowhere.
 
 ## The version sits next to the update check
 
-The menu shows "Version 0.2.0" as a label, directly above "Check for Updates…".
+The menu shows "Version 0.2.1" as a label, directly above "Check for Updates…".
 
 A version nobody can read is no use the moment someone is reporting a bug, and
 the page they would go to about it is the natural thing to put it beside.
