@@ -57,15 +57,42 @@ and no indication of which key it wanted.
 
 So the choice is only made when it is unambiguous. `security find-identity` is
 narrowed to `Apple Development` certificates, and exactly one match is used.
-Several matches sign ad-hoc and print the list, because guessing between them is
-the failure this rule exists to avoid; none also signs ad-hoc.
 `SMARTQUIT_SIGNING_ACCOUNT` narrows the match by Apple ID, and
 `CODESIGN_IDENTITY` names an identity outright.
+
+With no unambiguous match the build stops. It used to sign ad-hoc and print a
+warning, which is how a properly signed install came to be replaced by an ad-hoc
+one: macOS went on showing the app as approved while telling it it had no
+permission, so it quit nothing and said nothing, and the only trace was a line
+that had scrolled past during the build. A warning nobody reads is not a choice
+anyone made. `SMARTQUIT_ALLOW_ADHOC=1` is how the cost gets accepted out loud;
+CI sets it, having no certificate and no grant to lose.
 
 No Apple ID is written into the script. A default there would name the
 maintainer's account in a public repository, and would send every other
 contributor's build down the "no certificate found for someone else's email"
 path.
+
+## A changed signature is announced, because nothing else can
+
+`Scripts/build-app.sh` records the identity it signed with and says so when it differs from last time.
+
+TCC stores the grant against the code requirement the app carried when it was
+approved. Any change of identity — ad-hoc to real, Apple Development to
+Developer ID, one Apple ID to another — leaves the stored requirement matching
+nothing, and macOS then denies the app while System Settings still shows it
+ticked. Re-ticking does not rebuild the record; only
+`tccutil reset Accessibility com.smartquit.SmartQuit` does.
+
+The app cannot detect this. From inside the process a stale grant and a grant
+that was never given are the same refusal, `kAXErrorAPIDisabled` on every query.
+The build is the only place that knows the identity changed, so it is the only
+place that can name the fix. It keeps the last identity in
+`build/last-signing-identity` and prints the `tccutil` line when it moves.
+
+The same applies to a run of `Scripts/release.sh` on a machine that has been
+running development builds: Developer ID is a different identity, so the grant
+goes with it.
 
 ## Packaging is split from notarizing
 
@@ -251,8 +278,10 @@ first sign of it is a broken download.
 
 So the workflow assembles the bundle and checks the executable and `Info.plist`
 are where the launcher expects them, then runs `codesign --verify`. The runner
-has no Apple Development certificate, so this signs ad-hoc — which is the point
-of the check being *assembled and signable* rather than *distributable*.
+has no Apple Development certificate, so it sets `SMARTQUIT_ALLOW_ADHOC=1` and
+signs ad-hoc — which is the point of the check being *assembled and signable*
+rather than *distributable*. A runner has no Accessibility grant to lose, which
+is exactly why the flag that guards local builds can be waived here.
 Notarization needs secrets no pull request should have, and stays a local step
 in `Scripts/release.sh`.
 

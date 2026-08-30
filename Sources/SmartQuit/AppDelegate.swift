@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         sweeper = AppSweeper(
             provider: provider,
-            counter: AccessibilityWindowCounter(),
+            counter: SpaceAwareWindowCounter(),
             engine: engine
         )
 

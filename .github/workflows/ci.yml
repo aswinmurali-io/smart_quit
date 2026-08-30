@@ -33,8 +33,11 @@ jobs:
       # `swift test` cannot see. Signing falls back to ad-hoc on the runner,
       # which is fine: this checks the bundle is assembled and signable, not
       # that it is distributable.
+      # The runner holds no Apple Development certificate, and has no
+      # Accessibility grant to lose, so ad-hoc is asked for outright. Locally
+      # the build refuses it — see Scripts/build-app.sh.
       - name: Assemble the app bundle
-        run: ./Scripts/build-app.sh
+        run: SMARTQUIT_ALLOW_ADHOC=1 ./Scripts/build-app.sh
 
       - name: Verify the bundle
         run: |
