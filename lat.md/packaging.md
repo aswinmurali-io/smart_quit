@@ -49,16 +49,51 @@ the app is told it has no permission, and re-ticking does not fix it — the sta
 record has to be cleared with
 `tccutil reset Accessibility com.smartquit.SmartQuit`.
 
-Any Apple Development certificate gives a stable identity, and the grant then
-survives rebuilds. The certificate is never picked by taking the first one in
-the keychain: a keychain routinely holds work certificates whose private keys
-are not usable, and signing with one fails late with `errSecInternalComponent`
-and no indication of which key it wanted.
+A real certificate gives a stable identity, and the grant then survives
+rebuilds. Which real certificate matters, though, and Developer ID is preferred
+over Apple Development for a reason that has nothing to do with distribution.
+
+What TCC stores is the code requirement, and the two identities produce
+different ones. Apple Development pins the leaf certificate's common name:
+
+```
+identifier "com.smartquit.SmartQuit" and anchor apple generic
+  and certificate leaf[subject.CN] = "Apple Development: you@example.com (CFHD58CZ5M)"
+```
+
+Developer ID pins the team and nothing narrower:
+
+```
+identifier "com.smartquit.SmartQuit" and anchor apple generic
+  and certificate leaf[subject.OU] = WMY7XK75RC
+```
+
+So an Apple Development grant dies when that certificate is reissued, and dies
+again every time `Scripts/release.sh` signs the same bundle with Developer ID —
+twice a cycle on the machine that both develops and releases, which is how this
+was found. Signing local builds with the identity `release.sh` already uses
+leaves one requirement, approved once, surviving rebuilds, releases and
+certificate renewals alike. A locally built bundle satisfies the requirement
+stored for the released one, because they are the same requirement.
+
+Apple Development is still accepted, for a contributor who has one and no
+Developer ID. It costs a re-approval whenever that certificate changes, which is
+the tier's price rather than a fault in it.
+
+The certificate is never picked by taking the first one in the keychain: a
+keychain routinely holds work certificates whose private keys are not usable,
+and signing with one fails late with `errSecInternalComponent` and no
+indication of which key it wanted.
 
 So the choice is only made when it is unambiguous. `security find-identity` is
-narrowed to `Apple Development` certificates, and exactly one match is used.
-`SMARTQUIT_SIGNING_ACCOUNT` narrows the match by Apple ID, and
-`CODESIGN_IDENTITY` names an identity outright.
+searched for `Developer ID Application` first and `Apple Development` second,
+and exactly one match in the first tier that matches at all is used.
+`SMARTQUIT_SIGNING_ACCOUNT` narrows the match, and `CODESIGN_IDENTITY` names an
+identity outright.
+
+Ambiguity inside a tier stops the build rather than falling through to the next.
+Two Developer ID certificates is a question to answer, and answering it by
+quietly signing with a weaker identity would spend the grant to avoid asking.
 
 With no unambiguous match the build stops. It used to sign ad-hoc and print a
 warning, which is how a properly signed install came to be replaced by an ad-hoc
@@ -90,9 +125,13 @@ The build is the only place that knows the identity changed, so it is the only
 place that can name the fix. It keeps the last identity in
 `build/last-signing-identity` and prints the `tccutil` line when it moves.
 
-The same applies to a run of `Scripts/release.sh` on a machine that has been
-running development builds: Developer ID is a different identity, so the grant
-goes with it.
+A run of `Scripts/release.sh` used to do this on any machine that had been
+running development builds, Developer ID being a different identity from Apple
+Development. It no longer does when both sign with Developer ID, which is the
+point of preferring it above — the warning stays because the cases that remain
+are real: a contributor on Apple Development whose certificate is reissued, an
+ad-hoc CI build copied to a real machine, or a second Developer ID naming a
+different team.
 
 ## Packaging is split from notarizing
 

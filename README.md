@@ -118,8 +118,12 @@ Needs the Xcode command line tools.
 ./Scripts/build-app.sh
 ```
 
-That builds `dist/Smart Quit.app`, signing it with the Apple Development
-certificate in your keychain when there is exactly one. Then:
+That builds `dist/Smart Quit.app`, signing it with the Developer ID Application
+certificate in your keychain, or an Apple Development one if you have no
+Developer ID — either way only when exactly one matches. Developer ID is
+preferred because macOS ties the Accessibility permission to the certificate,
+and a Developer ID signature keeps that permission across rebuilds, releases and
+certificate renewals. Then:
 
 ```bash
 cp -R "dist/Smart Quit.app" ~/Applications/ && open ~/Applications/"Smart Quit.app"

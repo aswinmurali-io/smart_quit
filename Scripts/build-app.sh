@@ -60,23 +60,47 @@ cp "${ICON}" "${BUNDLE}/Contents/Resources/${TARGET}.icns"
 # to be cleared with `tccutil reset Accessibility com.smartquit.SmartQuit`.
 #
 # A real certificate gives a stable identity across rebuilds, so the grant
-# survives. Any Apple Development certificate will do for local use; shipping to
-# other people needs Developer ID, which Scripts/release.sh handles.
-# The identity is taken from the Apple Development certificates only, and only
-# when the choice is unambiguous. A keychain routinely holds work certificates
+# survives. Developer ID is preferred over Apple Development, and the reason is
+# not distribution — it is what TCC stores. The requirement recorded for an
+# Apple Development signature pins the leaf certificate's common name:
+#
+#   ... certificate leaf[subject.CN] = "Apple Development: you@example.com (CFHD58CZ5M)"
+#
+# where a Developer ID signature pins the team and nothing narrower:
+#
+#   ... certificate leaf[subject.OU] = WMY7XK75RC
+#
+# So an Apple Development grant dies when that certificate is reissued, and dies
+# again every time Scripts/release.sh signs the same bundle with Developer ID
+# for a release — twice per cycle on the machine that does both. Signing here
+# with the identity release.sh already uses means one requirement, approved once
+# and surviving rebuilds, releases and certificate renewals alike.
+#
+# Apple Development is still accepted, for a contributor who has one and no
+# Developer ID. It costs a re-approval whenever that certificate changes, which
+# is the tier's price rather than a fault in it.
+#
+# The identity is never guessed at. A keychain routinely holds work certificates
 # whose private keys are not usable here — signing with one fails late, with
-# errSecInternalComponent and nothing to say which key it wanted. So one
-# matching certificate is used, several are refused with the list printed, and
-# SMARTQUIT_SIGNING_ACCOUNT narrows the match by Apple ID.
+# errSecInternalComponent and nothing to say which key it wanted. So exactly one
+# match is used, several are refused with the list printed, and
+# SMARTQUIT_SIGNING_ACCOUNT narrows the match.
+#
+# Ambiguity inside a tier stops the build rather than falling through to the
+# next one: two Developer ID certificates is a question to answer, not a reason
+# to quietly sign with a weaker identity.
 SIGNING_ACCOUNT="${SMARTQUIT_SIGNING_ACCOUNT:-}"
 
 IDENTITY="${CODESIGN_IDENTITY:-}"
 CANDIDATES=""
 if [[ -z "${IDENTITY}" ]]; then
-    CANDIDATES="$(security find-identity -v -p codesigning \
-        | grep -F '"Apple Development:' \
-        | grep -F "${SIGNING_ACCOUNT}" \
-        | sed -E 's/.*"(.*)"/\1/' || true)"
+    for KIND in "Developer ID Application" "Apple Development"; do
+        CANDIDATES="$(security find-identity -v -p codesigning \
+            | grep -F "\"${KIND}:" \
+            | grep -F "${SIGNING_ACCOUNT}" \
+            | sed -E 's/.*"(.*)"/\1/' || true)"
+        [[ -n "${CANDIDATES}" ]] && break
+    done
     if [[ "$(grep -c . <<< "${CANDIDATES}")" -eq 1 ]]; then
         IDENTITY="${CANDIDATES}"
     fi
@@ -93,10 +117,11 @@ fi
 # because a runner has no certificate and no permission to lose.
 if [[ -z "${IDENTITY}" ]]; then
     if [[ -n "${CANDIDATES}" ]]; then
-        REASON="more than one Apple Development certificate matched"
-        ADVICE="Set SMARTQUIT_SIGNING_ACCOUNT to your Apple ID, or CODESIGN_IDENTITY to one of these:"
+        REASON="more than one ${KIND} certificate matched"
+        ADVICE="Set SMARTQUIT_SIGNING_ACCOUNT to narrow the match, or CODESIGN_IDENTITY to one of these:"
     else
-        REASON="no Apple Development certificate${SIGNING_ACCOUNT:+ for ${SIGNING_ACCOUNT}} in the keychain"
+        REASON="no Developer ID Application or Apple Development certificate\
+${SIGNING_ACCOUNT:+ for ${SIGNING_ACCOUNT}} in the keychain"
         ADVICE="Set SMARTQUIT_SIGNING_ACCOUNT or CODESIGN_IDENTITY to name one."
     fi
 
