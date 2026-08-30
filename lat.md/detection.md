@@ -126,7 +126,9 @@ Sheets, popovers, panels, and system dialogs are all windows to the
 Accessibility API but none of them represent a document the user is working in.
 An app showing only a save sheet is, for our purposes, windowless.
 
-Windows with no subrole at all are not counted.
+Windows with no subrole at all are not counted. That is a different answer from
+a window whose subrole could not be read, which is unknown rather than
+uninteresting — see "A locked screen makes every window unreadable" below.
 
 ## Minimized and hidden windows still count
 
@@ -153,6 +155,40 @@ persistently, so this distinction is exercised constantly, not just in theory.
 
 `nil` propagates through `AppSnapshot` in `Sources/SmartQuitCore/AppSnapshot.swift`
 and is treated by the engine as "leave this app alone".
+
+## A locked screen makes every window unreadable
+
+While the screen is locked every window's `AXSubrole` query returns
+`kAXErrorAttributeUnsupported`, so no window can be classified.
+
+Nothing fails outright, which is what made this dangerous. The app-level windows
+query keeps succeeding and still returns the windows; only the per-window
+subrole read fails. A subrole that could not be read was treated the same as a
+window that has none — not a standard window — so an app with one real window
+counted zero. Not an unknown: a confident zero, which starts the clock.
+
+Measured against a real lock, Claude, Safari, Unity, YouTube and GitHub Desktop
+all went windowless within three seconds of the screen locking and recovered the
+instant it was unlocked. The engine logged all five as "became windowless —
+quitting in 300s". A lock held longer than the grace period would have quit
+every one of them, and the frontmost rule would have spared only the one app
+that happened to be in front.
+
+So a window whose subrole cannot be read makes the whole count `nil`. This is
+the rule from "Unknown is not zero" above, applied per window rather than only
+to the app: `kAXErrorNoValue` means the window genuinely has no subrole,
+anything else that is not a success means it could not be determined. The rule
+had always been written down for the windows list and never for the subroles,
+which is the whole of the bug.
+
+Keeping those two answers apart is what makes this safe to leave on. Finder's
+desktop window answers `noValue` every sweep, so it stays a certain answer and
+Finder stays at zero windows rather than becoming permanently unknown. An app
+that is genuinely windowless has no windows to be unreadable, so its clock goes
+on running through a lock and it is still quit on the other side.
+
+See `WindowSubrole` and `standardWindowCount(pid:)` in
+`Sources/SmartQuitCore/AccessibilityWindowCounter.swift`.
 
 ## Messaging timeout
 

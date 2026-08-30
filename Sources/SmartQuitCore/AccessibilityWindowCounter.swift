@@ -13,19 +13,38 @@ import Foundation
 /// Minimized and hidden windows remain in an app's `AXWindows`, so they
 /// correctly continue to count as windows.
 public final class AccessibilityWindowCounter: WindowCounting {
+    /// How a single window answered when asked for its subrole.
+    ///
+    /// The third case is the point of this type. A window whose subrole cannot
+    /// be read is not the same as a window that has none: the first says we
+    /// could not classify it, the second says we classified it and it is not a
+    /// document window. Collapsing the two makes a real window vanish from the
+    /// count, which is exactly what a locked screen used to do.
+    enum WindowSubrole: Equatable {
+        /// The window answered with this subrole.
+        case named(String)
+        /// The window answered, and has no subrole.
+        case absent
+        /// The window could not be asked.
+        case unknown
+    }
+
     /// Reads the subrole of each of an app's windows.
     ///
-    /// Returns `nil` if the application could not be queried at all. Individual
-    /// elements are `nil` when a window has no subrole.
-    typealias SubroleReader = (pid_t) -> [String?]?
+    /// Returns `nil` if the application could not be queried at all.
+    typealias SubroleReader = (pid_t) -> [WindowSubrole]?
 
-    /// What an Accessibility error means for counting windows.
+    /// What an Accessibility error means for reading an attribute.
+    ///
+    /// This applies to any attribute read, not only the windows list: the same
+    /// three-way distinction decides whether a per-window subrole was answered,
+    /// answered as absent, or could not be determined.
     enum Outcome: Equatable {
-        /// The query succeeded; read the windows out of the value.
-        case windows
-        /// The app answered and has no windows.
+        /// The query succeeded; read the attribute out of the value.
+        case value
+        /// The element answered, and has no value for this attribute.
         case none
-        /// The count could not be determined.
+        /// The attribute could not be determined.
         case unknown
     }
 
@@ -50,15 +69,15 @@ public final class AccessibilityWindowCounter: WindowCounting {
         self.init(readSubroles: Self.readSubrolesViaAccessibility)
     }
 
-    /// Maps an Accessibility error onto what it means for a window count.
+    /// Maps an Accessibility error onto what it means for a value we asked for.
     ///
-    /// Only `noValue` means "no windows". Everything else that is not a success
-    /// is unknown — in particular `attributeUnsupported`, which says the element
-    /// has no such attribute, not that the app has no windows. Reporting zero
-    /// there would make the app a quit candidate.
+    /// Only `noValue` means "there is none". Everything else that is not a
+    /// success is unknown — in particular `attributeUnsupported`, which says the
+    /// element has no such attribute, not that the answer is empty. Reporting
+    /// zero there would make the app a quit candidate.
     static func outcome(for result: AXError) -> Outcome {
         switch result {
-        case .success: return .windows
+        case .success: return .value
         case .noValue: return .none
         default: return .unknown
         }
@@ -66,19 +85,29 @@ public final class AccessibilityWindowCounter: WindowCounting {
 
     public func standardWindowCount(pid: pid_t) -> Int? {
         guard let subroles = readSubroles(pid) else { return nil }
-        return subroles.filter { $0 == kAXStandardWindowSubrole as String }.count
+
+        // A window we could not classify makes the whole count unknown. The app
+        // told us it has this window, so leaving it out would report a number
+        // lower than the truth — and for an app whose windows are all
+        // unreadable, that number is zero, which starts the clock on an app the
+        // user is working in. A locked screen does exactly that: the windows
+        // list still answers, but every subrole comes back
+        // `attributeUnsupported` until the screen is unlocked.
+        guard !subroles.contains(.unknown) else { return nil }
+
+        return subroles.filter { $0 == .named(kAXStandardWindowSubrole as String) }.count
     }
 
     // MARK: - Accessibility
 
-    private static func readSubrolesViaAccessibility(pid: pid_t) -> [String?]? {
+    private static func readSubrolesViaAccessibility(pid: pid_t) -> [WindowSubrole]? {
         let app = AXUIElementCreateApplication(pid)
 
         var value: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value)
 
         switch outcome(for: result) {
-        case .windows:
+        case .value:
             guard let windows = value as? [AXUIElement] else { return nil }
             return windows.map(subrole(of:))
         case .none:
@@ -89,10 +118,18 @@ public final class AccessibilityWindowCounter: WindowCounting {
         }
     }
 
-    private static func subrole(of window: AXUIElement) -> String? {
+    private static func subrole(of window: AXUIElement) -> WindowSubrole {
         var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(window, kAXSubroleAttribute as CFString, &value) == .success
-        else { return nil }
-        return value as? String
+        let result = AXUIElementCopyAttributeValue(window, kAXSubroleAttribute as CFString, &value)
+
+        switch outcome(for: result) {
+        case .value:
+            guard let name = value as? String else { return .unknown }
+            return .named(name)
+        case .none:
+            return .absent
+        case .unknown:
+            return .unknown
+        }
     }
 }
