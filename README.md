@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <sub>Notarised by Apple · macOS 14.2 Sonoma or later · 1.3 MB</sub>
+  <sub>Notarised by Apple · macOS 14.2 Sonoma or later · 1.2 MB download</sub>
 </p>
 
 ---
@@ -37,8 +37,8 @@ with every unsaved-changes dialog intact.
 
 It lives in the menu bar. **No Dock icon, no window, no preferences pane.**
 
-**The built app is 1.3 MB — native Swift and AppKit, no Electron, no bundled
-runtime, no background daemon**.
+**The installed app is 1.4 MB — native Swift and AppKit, no Electron, no
+bundled runtime, no background daemon**.
 
 ## What it looks like
 
@@ -46,8 +46,9 @@ runtime, no background daemon**.
   <img src="docs/menu.png" alt="The Smart Quit menu, showing the app in front, apps on the clock, apps with windows, and the settings below them" width="520">
 </p>
 
-The hourglass icon fills as apps go on the clock, and dims when you pause it.
-Countdowns tick live while the menu is open.
+The hourglass icon fills while apps are on the clock, and dims when you turn
+Smart Quit off. Countdowns tick live while the menu is open. At the bottom sit
+the version and *Check for Updates…*, which opens the releases page.
 
 ## Download
 
@@ -93,13 +94,23 @@ An app that refuses to quit lands in **Left alone** and is never asked again
 until it shows a window. Otherwise an app holding unsaved work would get a save
 dialog every few seconds, forever.
 
+## How long it waits
+
+Five minutes, out of the box. The menu's *Grace period* offers 1, 2, 5, 10 and
+30 minutes, or *Custom…* for anything from 1 minute to 24 hours.
+
+*Per-app grace periods* overrides that for one app: give a browser 30 minutes
+and a scratch editor 1, and the rest keep following the global value. Overrides
+are stored by bundle identifier, so they survive a relaunch.
+
 ## What it will never quit
 
 | | Why |
 |---|---|
 | **The app you're looking at** | Its clock keeps running, so it goes the moment you switch away — but never while it's in front of you. The menu names it, and marks its row *(foreground)*. |
 | **Anything with unsaved work** | Quitting is `terminate()`, never `terminate(force:)`. The app shows its save dialog and refuses. That's the correct outcome, not a failure. |
-| **Apps it couldn't inspect** | An unreadable window count is *unknown*, never *zero*. Without that distinction, a hung app — or a revoked permission — reads as windowless and gets quit. |
+| **Apps it couldn't inspect** | An unreadable window count is *unknown*, never *zero*. Without that distinction, a hung app — or a revoked permission — reads as windowless and gets quit. A locked screen makes every window unreadable, so this is also what keeps a long lock from emptying your desktop. |
+| **Windows on another desktop** | The Accessibility API only sees the Space in front of you, and reports a confident *zero* for an app whose windows are all elsewhere. Those windows are added back from the window server, so a window parked on a second desktop — or a fullscreen window, which gets a Space of its own — still counts. |
 | **Minimized or hidden apps** | Both still count as having windows. A minimized window is work in progress. |
 | **Finder, menu bar utilities, background agents** | Windowless by design. Only regular, Dock-visible apps are eligible. |
 | **Anything playing audio** | Its clock pauses for as long as the sound lasts — including audio coming from a helper process, so a browser tab or an Electron app counts too. Turn it off with *Pause apps playing audio* and every held clock resumes from where it stopped. |
@@ -209,10 +220,13 @@ The decision engine, settings, menu structure and duration formatting are
 covered directly. The engine takes the current time as a parameter, so the
 timing tests are exact and finish in milliseconds instead of sleeping.
 
-Window counting is covered at its seams — the subrole filter, and the mapping
-from `AXError` to "no windows" versus "unknown" — rather than against a live
-window server. The sweep's threading is covered for reentrancy and for
-re-reading the frontmost app, which is the path that can quit the wrong app.
+Window counting is covered at its seams — the subrole filter, the mapping from
+`AXError` to "no windows" versus "unknown", and the Space lookup's separation of
+a live window parked on another desktop from the leftover surface of a closed
+one — rather than against a live window server. Audio attribution is covered up
+the process tree, which is how a helper process holds its parent's clock. The
+sweep's threading is covered for reentrancy and for re-reading the frontmost
+app, which is the path that can quit the wrong app.
 
 ## Design notes
 
