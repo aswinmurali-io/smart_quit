@@ -7,7 +7,7 @@ import XCTest
 
 final class SpaceWindowLookupTests: XCTestCase {
     /// One `CGWindowList` entry, stated in the terms the lookup actually reads.
-    private func window(id: Int, pid: pid_t, layer: Int = 0) -> [String: Any] {
+    private func window(id: CGWindowID, pid: pid_t, layer: Int = 0) -> [String: Any] {
         [
             kCGWindowNumber as String: id,
             kCGWindowOwnerPID as String: pid,
@@ -15,16 +15,21 @@ final class SpaceWindowLookupTests: XCTestCase {
         ]
     }
 
-    /// Builds a lookup over a canned window list and Space map.
+    /// Builds a lookup over a canned window list, Space map, and ordered-in set.
+    ///
+    /// Windows are ordered in unless `orderedOut` says otherwise, since that is
+    /// the ordinary case and the exception is what each test is about.
     private func lookup(
         windows: [[String: Any]],
         activeSpaces: Set<Int>,
-        spacesByWindow: [Int: Set<Int>]
+        spacesByWindow: [CGWindowID: Set<Int>],
+        orderedOut: Set<CGWindowID> = []
     ) -> SkyLightSpaceWindowLookup {
         SkyLightSpaceWindowLookup(
             readWindowList: { windows },
             readActiveSpaces: { activeSpaces },
-            readWindowSpaces: { spacesByWindow[$0] ?? [] }
+            readWindowSpaces: { spacesByWindow[$0] ?? [] },
+            readWindowOrderedIn: { !orderedOut.contains($0) }
         )
     }
 
@@ -60,9 +65,8 @@ final class SpaceWindowLookupTests: XCTestCase {
         XCTAssertEqual(subject.windowCountsOnInactiveSpaces(), [:])
     }
 
-    /// The whole reason Space membership is consulted rather than window
-    /// geometry: shadows, icon buffers, and the remains of closed windows sit
-    /// at layer 0 and look like windows, but belong to no Space.
+    /// Shadows and icon buffers sit at layer 0 and look like windows by size,
+    /// but the window server puts them on no Space at all.
     func testIgnoresSurfacesThatBelongToNoSpace() {
         let subject = lookup(
             windows: [window(id: 10, pid: 7), window(id: 11, pid: 7)],
@@ -82,6 +86,47 @@ final class SpaceWindowLookupTests: XCTestCase {
         )
 
         XCTAssertEqual(subject.windowCountsOnInactiveSpaces(), [:])
+    }
+
+    /// The defect that Space membership alone does not catch. When a window is
+    /// closed the window server keeps its surface, on the Space that window sat
+    /// on — so an app the user emptied on desktop 1 looks, from desktop 2, as
+    /// though it still has a window there. Left uncaught, that app can never be
+    /// quit again.
+    func testIgnoresTheSurfaceOfAClosedWindowOnAnotherSpace() {
+        let subject = lookup(
+            windows: [window(id: 10, pid: 7)],
+            activeSpaces: [1],
+            spacesByWindow: [10: [2]],
+            orderedOut: [10]
+        )
+
+        XCTAssertEqual(subject.windowCountsOnInactiveSpaces(), [:])
+    }
+
+    /// The case this whole type exists for, and the one measured on a real
+    /// second desktop: a live window, on a Space the user is not looking at,
+    /// which Accessibility reports as not existing.
+    func testCountsALiveWindowParkedOnAnotherDesktop() {
+        let subject = lookup(
+            windows: [window(id: 10, pid: 7)],
+            activeSpaces: [1],
+            spacesByWindow: [10: [2]]
+        )
+
+        XCTAssertEqual(subject.windowCountsOnInactiveSpaces(), [7: 1])
+    }
+
+    /// One app can own both at once, and only the live one is a window.
+    func testSeparatesALiveWindowFromADeadSurfaceOwnedByTheSameApp() {
+        let subject = lookup(
+            windows: [window(id: 10, pid: 7), window(id: 11, pid: 7)],
+            activeSpaces: [1],
+            spacesByWindow: [10: [2], 11: [2]],
+            orderedOut: [11]
+        )
+
+        XCTAssertEqual(subject.windowCountsOnInactiveSpaces(), [7: 1])
     }
 
     func testCountsSeparatelyPerApplication() {

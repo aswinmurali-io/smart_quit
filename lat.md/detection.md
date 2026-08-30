@@ -39,29 +39,59 @@ strips, icon buffers, and the remains of windows that were closed — none of th
 separable from a real window by size, by layer, or by `kCGWindowIsOnscreen`,
 which is false for a window on another Space just as it is for a dead buffer.
 
-Space membership is what separates them. A real window belongs to the Space it
-sits on; a leftover surface belongs to no Space at all. So a window is added to
-the count only when it is at layer 0, belongs to at least one Space, and belongs
-to none of the Spaces currently on screen. Each display shows its own Space, so
-"currently on screen" is the union across displays, and a window present on
-every Space is already in the Accessibility count.
+Two questions are asked of each surface, and both are needed.
+
+Which Space it is on says whether the Accessibility count has already seen it.
+Each display shows its own Space, so "on screen" is the union across displays,
+and a window present on every Space is already counted.
+
+Whether the window server has *ordered it in* says whether it is a window at
+all. This is the question Space membership cannot answer: when a window is
+closed the window server keeps its surface, still on the Space that window sat
+on. Measured on a normal desktop, Mail, Terminal, and Activity Monitor each held
+one such surface at plausible window size while genuinely having no windows. Had
+the count gone on Space membership alone, every one of those apps would have
+become permanently unquittable the moment the user stepped onto another desktop
+— the exact opposite of the fix, for exactly the people it is for.
+
+Ordered-in is not the same question as visible, which is what makes it work
+here: a window parked on another desktop is ordered in and reports `true`, while
+`kCGWindowIsOnscreen` reports `false` for it just as it does for a dead surface.
+That was confirmed against a real second desktop — a live window there reported
+ordered in, and the three leftover surfaces above did not.
+
+So a window is added to the count only when it is at layer 0, belongs to at
+least one Space, belongs to none of the Spaces on screen, and is ordered in.
 
 The Accessibility count stays authoritative for the Space it can see and the
 lookup only ever adds to it. That fixes the direction of any error: a surface
 mistaken for a window delays a quit, it never causes one. An unknown count stays
 unknown, because adding to `nil` would turn "we could not ask" into a number.
 
+Because this path can only ever hold an app back from being quit, and would do
+so silently, a count raised from another Space is logged. An app that never
+reaches its clock is otherwise invisible from a log stream.
+
+The two paths do not agree on what a window is. The Accessibility path requires
+an `AXStandardWindow` subrole; the window server offers no equivalent, so this
+path accepts any ordered-in layer-0 window. A borderless overlay on another
+Space therefore counts where its twin on the active Space would not. The
+divergence is in the safe direction and is left alone rather than guessed at.
+
 See `SpaceAwareWindowCounter` in `Sources/SmartQuitCore/SpaceAwareWindowCounter.swift`
 and `SkyLightSpaceWindowLookup` in `Sources/SmartQuitCore/SpaceWindowLookup.swift`.
 
 ## The Space lookup is private and optional
 
-Space membership comes from three SkyLight functions that Apple does not
-publish, resolved with `dlsym` rather than linked.
+Space membership and ordered-in state come from four SkyLight functions that
+Apple does not publish, resolved with `dlsym` rather than linked.
 
-Nothing public says which Space a window is on. `SLSMainConnectionID`,
-`SLSCopyManagedDisplaySpaces`, and `SLSCopySpacesForWindows` are what every
-window manager on macOS uses for it. Smart Quit ships as a signed disk image
+Nothing public says which Space a window is on, or whether a surface is placed
+on screen at all. `SLSMainConnectionID`, `SLSCopyManagedDisplaySpaces`,
+`SLSCopySpacesForWindows`, and `SLSWindowIsOrderedIn` are what every window
+manager on macOS uses for it. `SLSWindowIsOrderedIn` takes its answer in an
+out-parameter and returns a `CGError`; the two-argument form it is usually
+quoted as does not match the symbol and crashes the process on call. Smart Quit ships as a signed disk image
 rather than through the App Store, so a private framework costs nothing at
 review; it costs maintenance, which is why the surface is three calls.
 

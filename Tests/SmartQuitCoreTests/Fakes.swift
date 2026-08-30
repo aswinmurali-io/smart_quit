@@ -64,8 +64,19 @@ extension AppSnapshot {
 final class FakeWindowCounter: WindowCounting {
     var countsByPID: [pid_t: Int?] = [:]
     private(set) var queried: [pid_t] = []
+    /// How many times the sweep announced itself.
+    private(set) var prepareCount = 0
+    /// Whether preparation happened before the first app was counted. A counter
+    /// that snapshots the system in `prepareForSweep` answers from stale state
+    /// — or from none at all — if this is ever false.
+    private(set) var preparedBeforeFirstQuery = false
     /// Runs during the count, to simulate the world changing mid-sweep.
     var onQuery: ((pid_t) -> Void)?
+
+    func prepareForSweep() {
+        if queried.isEmpty { preparedBeforeFirstQuery = true }
+        prepareCount += 1
+    }
 
     func standardWindowCount(pid: pid_t) -> Int? {
         queried.append(pid)

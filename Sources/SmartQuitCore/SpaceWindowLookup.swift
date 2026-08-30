@@ -24,10 +24,14 @@ public protocol SpaceWindowLookup: AnyObject {
 /// own it cannot be counted: it reports menu bar strips, icon buffers, and the
 /// leftover surfaces of windows that were closed, all at layer 0 and all
 /// indistinguishable from a real window by size or by `kCGWindowIsOnscreen`.
-/// Space membership is what separates them — a dead surface belongs to no
-/// Space, a real window belongs to exactly the Space it sits on.
 ///
-/// The three SkyLight functions used here are private, so they are resolved
+/// Two questions are asked of each surface, and both are needed. Which Space it
+/// is on says whether the Accessibility count has already seen it. Whether it is
+/// *ordered in* says whether it is a window at all — the window server keeps the
+/// surface of a closed window, on the Space that window used to occupy, and
+/// nothing about its Space, size, or layer distinguishes it from a live one.
+///
+/// The SkyLight functions used here are private, so they are resolved
 /// with `dlsym` and the whole lookup reports nothing if any of them is missing.
 /// A macOS release that withdraws them therefore costs Smart Quit its
 /// cross-Space vision and nothing else — the Accessibility count still stands.
@@ -39,7 +43,11 @@ public final class SkyLightSpaceWindowLookup: SpaceWindowLookup {
     typealias ActiveSpacesReader = () -> Set<Int>
 
     /// The Spaces a window belongs to, empty for a surface on no Space at all.
-    typealias WindowSpacesReader = (Int) -> Set<Int>
+    typealias WindowSpacesReader = (CGWindowID) -> Set<Int>
+
+    /// Whether the window server has placed a surface on its Space. True for a
+    /// window on another desktop; false for the remains of a closed one.
+    typealias WindowOrderedInReader = (CGWindowID) -> Bool
 
     /// Only windows at this layer are ordinary application windows. Menus,
     /// the Dock, status items, and the desktop all live at other layers.
@@ -48,15 +56,18 @@ public final class SkyLightSpaceWindowLookup: SpaceWindowLookup {
     private let readWindowList: WindowListReader
     private let readActiveSpaces: ActiveSpacesReader
     private let readWindowSpaces: WindowSpacesReader
+    private let readWindowOrderedIn: WindowOrderedInReader
 
     init(
         readWindowList: @escaping WindowListReader,
         readActiveSpaces: @escaping ActiveSpacesReader,
-        readWindowSpaces: @escaping WindowSpacesReader
+        readWindowSpaces: @escaping WindowSpacesReader,
+        readWindowOrderedIn: @escaping WindowOrderedInReader
     ) {
         self.readWindowList = readWindowList
         self.readActiveSpaces = readActiveSpaces
         self.readWindowSpaces = readWindowSpaces
+        self.readWindowOrderedIn = readWindowOrderedIn
     }
 
     /// Builds a lookup over the real window server, or one that reports nothing
@@ -64,13 +75,19 @@ public final class SkyLightSpaceWindowLookup: SpaceWindowLookup {
     public convenience init() {
         guard let skyLight = SkyLight() else {
             Log.windows.notice("SkyLight unavailable — windows on other Spaces will not be seen")
-            self.init(readWindowList: { [] }, readActiveSpaces: { [] }, readWindowSpaces: { _ in [] })
+            self.init(
+                readWindowList: { [] },
+                readActiveSpaces: { [] },
+                readWindowSpaces: { _ in [] },
+                readWindowOrderedIn: { _ in false }
+            )
             return
         }
         self.init(
             readWindowList: Self.readWindowListViaCoreGraphics,
             readActiveSpaces: skyLight.activeSpaces,
-            readWindowSpaces: skyLight.spaces(forWindow:)
+            readWindowSpaces: skyLight.spaces(forWindow:),
+            readWindowOrderedIn: skyLight.isOrderedIn(window:)
         )
     }
 
@@ -82,7 +99,7 @@ public final class SkyLightSpaceWindowLookup: SpaceWindowLookup {
         for window in readWindowList() {
             guard window[kCGWindowLayer as String] as? Int == Self.normalWindowLayer,
                   let pid = window[kCGWindowOwnerPID as String] as? pid_t,
-                  let id = window[kCGWindowNumber as String] as? Int
+                  let id = window[kCGWindowNumber as String] as? CGWindowID
             else { continue }
 
             // A surface belonging to no Space is a buffer, not a window. One
@@ -90,6 +107,12 @@ public final class SkyLightSpaceWindowLookup: SpaceWindowLookup {
             // Accessibility count and must not be added to it twice.
             let spaces = readWindowSpaces(id)
             guard !spaces.isEmpty, spaces.isDisjoint(with: activeSpaces) else { continue }
+
+            // The surface of a closed window keeps the Space that window sat on,
+            // so being elsewhere is not enough to be a window. Without this,
+            // every app whose last window was closed on a Space the user has
+            // since left would count as having one and could never be quit.
+            guard readWindowOrderedIn(id) else { continue }
 
             counts[pid, default: 0] += 1
         }

@@ -15,6 +15,13 @@ import Foundation
 ///   deliberately given no access to this object's state — it works from values
 ///   captured before it starts. The entry points assert the queue rather than
 ///   trusting callers.
+///
+///   The counter is the one exception: it may hold state between
+///   ``AppSweeper/snapshots(for:using:playingAudio:)`` preparing it and the
+///   counts that follow. That is safe only because `isSweeping` forbids
+///   overlapping sweeps and `countingQueue` is serial, so preparation and every
+///   count that reads it are ordered on one queue. A second caller of
+///   `snapshots` from another queue would break that.
 public final class AppSweeper {
     /// How often the system is swept.
     ///

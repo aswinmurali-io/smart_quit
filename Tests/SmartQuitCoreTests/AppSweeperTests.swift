@@ -49,6 +49,18 @@ final class AppSweeperTests: XCTestCase {
         ])
     }
 
+    /// Without this call a counter that works from a snapshot of the whole
+    /// system never takes one, and every app in every sweep is judged against
+    /// an empty view of the other Spaces — silently, and only in production.
+    func testPreparesTheCounterOnceBeforeCountingAnyApp() {
+        provider.apps = [.make(pid: 1), .make(pid: 2), .make(pid: 3)]
+
+        _ = AppSweeper.snapshots(for: provider.regularApps(), using: counter)
+
+        XCTAssertEqual(counter.prepareCount, 1)
+        XCTAssertTrue(counter.preparedBeforeFirstQuery)
+    }
+
     func testQueriesEveryApp() {
         provider.apps = [.make(pid: 1), .make(pid: 2), .make(pid: 3)]
 

@@ -50,6 +50,16 @@ public final class SpaceAwareWindowCounter: WindowCounting {
         // Answering with the Space count alone would turn "we cannot tell"
         // into a number, which is the mistake this codebase exists to avoid.
         guard let onActiveSpace = counter.standardWindowCount(pid: pid) else { return nil }
-        return onActiveSpace + (windowsElsewhere[pid] ?? 0)
+        let elsewhere = windowsElsewhere[pid] ?? 0
+
+        // This is the one path that can hold an app off its clock indefinitely,
+        // so it says so. A count that stays above zero for an app the user
+        // believes is windowless is otherwise invisible from a log stream.
+        if elsewhere > 0 {
+            Log.windows.debug(
+                "pid \(pid): \(onActiveSpace) window(s) here, \(elsewhere) on other Spaces"
+            )
+        }
+        return onActiveSpace + elsewhere
     }
 }
