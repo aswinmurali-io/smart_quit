@@ -25,6 +25,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# shellcheck source=Scripts/signing-identity.sh
+source "Scripts/signing-identity.sh"
+
 APP_NAME="Smart Quit"
 BUNDLE="dist/${APP_NAME}.app"
 # Derived the same way as in make-dmg.sh, from the same file, so the image this
@@ -40,18 +43,25 @@ ENTITLEMENTS="Resources/SmartQuit.entitlements"
 # notarytool, where the errors name neither the missing certificate nor the
 # missing profile.
 
-DEVELOPER_ID="${DEVELOPER_ID:-}"
-if [[ -z "${DEVELOPER_ID}" ]]; then
-    DEVELOPER_ID="$(security find-identity -v -p codesigning \
-        | grep -m1 '"Developer ID Application' \
-        | sed -E 's/.*"(.*)"/\1/' || true)"
-fi
-
-if [[ -z "${DEVELOPER_ID}" ]]; then
-    echo "error: no Developer ID Application certificate in the keychain." >&2
-    echo "       It comes with a paid Apple Developer Program membership;" >&2
-    echo "       download it from developer.apple.com and add it to the keychain." >&2
-    echo "       Scripts/build-app.sh still builds a locally runnable app without it." >&2
+# Chosen through the same code as Scripts/build-app.sh. This used to pick the
+# first Developer ID with `grep -m1` while build-app.sh refused an ambiguous
+# match — so a keychain with two of them could have the two scripts sign one
+# bundle with different certificates, producing different code requirements and
+# taking the Accessibility grant with them, both scripts reporting success.
+CODESIGN_IDENTITY="${DEVELOPER_ID:-${CODESIGN_IDENTITY:-}}"
+if smartquit_select_identity "Developer ID Application"; then
+    DEVELOPER_ID="${SIGNING_IDENTITY}"
+else
+    if [[ -n "${SIGNING_CANDIDATES}" ]]; then
+        echo "error: more than one Developer ID Application certificate matched." >&2
+        echo "       Set DEVELOPER_ID to one of these:" >&2
+        sed 's/^/         /' >&2 <<< "${SIGNING_CANDIDATES}"
+    else
+        echo "error: no Developer ID Application certificate in the keychain." >&2
+        echo "       It comes with a paid Apple Developer Program membership;" >&2
+        echo "       download it from developer.apple.com and add it to the keychain." >&2
+        echo "       Scripts/build-app.sh still builds a locally runnable app without it." >&2
+    fi
     exit 1
 fi
 
@@ -89,6 +99,25 @@ codesign --force \
     "${BUNDLE}"
 
 codesign --verify --strict --verbose=2 "${BUNDLE}"
+
+# The signature this script applies must produce the same code requirement as
+# the one build-app.sh applied a moment ago, or a user who approved a locally
+# built copy loses the grant on installing the release — the very drift the
+# shared identity selection exists to prevent. The hardened runtime and the
+# entitlements added above do not enter the requirement, so this is an equality
+# and not an approximation. Checked rather than assumed, because it is exactly
+# the kind of invariant that holds until someone edits one script.
+RELEASE_REQUIREMENT="$(smartquit_designated_requirement "${BUNDLE}")"
+BUILD_REQUIREMENT="$(cat build/last-signing-requirement 2>/dev/null || true)"
+if [[ -n "${BUILD_REQUIREMENT}" && "${RELEASE_REQUIREMENT}" != "${BUILD_REQUIREMENT}" ]]; then
+    echo "error: this signature does not match the one build-app.sh just applied." >&2
+    echo "       build-app.sh: ${BUILD_REQUIREMENT}" >&2
+    echo "       release.sh:   ${RELEASE_REQUIREMENT}" >&2
+    echo "       Installing this release would end the Accessibility grant of" >&2
+    echo "       anyone running a locally built copy. The two scripts have" >&2
+    echo "       drifted; both select through Scripts/signing-identity.sh." >&2
+    exit 1
+fi
 
 # MARK: Package
 

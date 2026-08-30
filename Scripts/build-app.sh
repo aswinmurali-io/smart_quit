@@ -19,6 +19,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# shellcheck source=Scripts/signing-identity.sh
+source "Scripts/signing-identity.sh"
+
 # The product name has a space; the executable, module and bundle identifier
 # do not. Keeping them apart means the name shown to a person can change
 # without touching a build setting or a code identifier.
@@ -80,31 +83,22 @@ cp "${ICON}" "${BUNDLE}/Contents/Resources/${TARGET}.icns"
 # Developer ID. It costs a re-approval whenever that certificate changes, which
 # is the tier's price rather than a fault in it.
 #
-# The identity is never guessed at. A keychain routinely holds work certificates
-# whose private keys are not usable here — signing with one fails late, with
-# errSecInternalComponent and nothing to say which key it wanted. So exactly one
-# match is used, several are refused with the list printed, and
-# SMARTQUIT_SIGNING_ACCOUNT narrows the match.
-#
-# Ambiguity inside a tier stops the build rather than falling through to the
-# next one: two Developer ID certificates is a question to answer, not a reason
-# to quietly sign with a weaker identity.
+# How the identity is chosen — the tiers, the ambiguity rule and why the choice
+# is never guessed at — lives in Scripts/signing-identity.sh, because
+# Scripts/release.sh has to make the same choice and the two drifting apart is
+# itself a way the grant dies.
 SIGNING_ACCOUNT="${SMARTQUIT_SIGNING_ACCOUNT:-}"
 
-IDENTITY="${CODESIGN_IDENTITY:-}"
+TIERS=("Developer ID Application" "Apple Development")
+
+IDENTITY=""
 CANDIDATES=""
-if [[ -z "${IDENTITY}" ]]; then
-    for KIND in "Developer ID Application" "Apple Development"; do
-        CANDIDATES="$(security find-identity -v -p codesigning \
-            | grep -F "\"${KIND}:" \
-            | grep -F "${SIGNING_ACCOUNT}" \
-            | sed -E 's/.*"(.*)"/\1/' || true)"
-        [[ -n "${CANDIDATES}" ]] && break
-    done
-    if [[ "$(grep -c . <<< "${CANDIDATES}")" -eq 1 ]]; then
-        IDENTITY="${CANDIDATES}"
-    fi
+KIND=""
+if smartquit_select_identity "${TIERS[@]}"; then
+    IDENTITY="${SIGNING_IDENTITY}"
 fi
+CANDIDATES="${SIGNING_CANDIDATES}"
+KIND="${SIGNING_KIND}"
 
 # Signing ad-hoc is a decision, not a fallback.
 #
@@ -152,26 +146,67 @@ codesign --verify --verbose "${BUNDLE}"
 # A changed signature is the moment the Accessibility grant dies.
 #
 # TCC stores the grant against the code requirement the app had when it was
-# approved. Sign with a different identity — ad-hoc to real, Apple Development
-# to Developer ID, one Apple ID to another — and the stored requirement no
-# longer matches: macOS denies the app while System Settings still shows it
+# approved. Sign in a way that produces a different requirement and the stored
+# one matches nothing: macOS denies the app while System Settings still shows it
 # ticked, and re-ticking does not rebuild the record. Nothing in the app can
 # detect this; from inside, a stale grant and a missing one are the same
-# refusal. The build is the only place that knows the identity changed, so it
-# is the only place that can say so.
-STAMP="build/last-signing-identity"
-mkdir -p "$(dirname "${STAMP}")"
-PREVIOUS="$(cat "${STAMP}" 2>/dev/null || true)"
-printf '%s' "${IDENTITY}" > "${STAMP}"
+# refusal. The build is the only place that can see it coming, so it is the only
+# place that can say so.
+#
+# What gets compared is the designated requirement itself, not the name of the
+# identity that produced it. The name is a proxy, and this codebase has now been
+# bitten twice by a proxy read as the real thing — a subrole that could not be
+# read counted as a window that was not there, and an identity name counted as
+# the requirement derived from it. Comparing the requirement fires exactly when
+# the grant dies and stays quiet otherwise, without anyone having to reason
+# about what a certificate kind implies.
+STAMP_DIR="build"
+IDENTITY_STAMP="${STAMP_DIR}/last-signing-identity"
+REQUIREMENT_STAMP="${STAMP_DIR}/last-signing-requirement"
+mkdir -p "${STAMP_DIR}"
 
-if [[ -n "${PREVIOUS}" && "${PREVIOUS}" != "${IDENTITY}" ]]; then
+REQUIREMENT="$(smartquit_designated_requirement "${BUNDLE}")"
+PREVIOUS_IDENTITY="$(cat "${IDENTITY_STAMP}" 2>/dev/null || true)"
+PREVIOUS_REQUIREMENT="$(cat "${REQUIREMENT_STAMP}" 2>/dev/null || true)"
+printf '%s' "${IDENTITY}" > "${IDENTITY_STAMP}"
+printf '%s' "${REQUIREMENT}" > "${REQUIREMENT_STAMP}"
+
+# An ad-hoc requirement is a cdhash and so differs on every build by design.
+# The ad-hoc branch above has already said what that costs; saying it twice
+# would train the reader to skip both.
+if [[ "${IDENTITY}" != "ad-hoc" &&
+      -n "${PREVIOUS_REQUIREMENT}" &&
+      "${PREVIOUS_REQUIREMENT}" != "${REQUIREMENT}" ]]; then
     echo
-    echo "!!  The signing identity changed since the last build."
-    echo "      was: ${PREVIOUS}"
+    echo "!!  The code requirement changed since the last build."
+    echo "      was: ${PREVIOUS_IDENTITY:-unknown}"
     echo "      now: ${IDENTITY}"
     echo "    macOS will refuse this build's Accessibility permission and show it"
     echo "    as granted anyway. Clear the stale record and approve it once more:"
     echo "      tccutil reset Accessibility com.smartquit.SmartQuit"
+fi
+
+# Falling back a tier is the one failure that arrives on a date rather than
+# from an edit, and it is silent by construction: an expired Developer ID stops
+# being listed, the search drops to Apple Development, and everything reports
+# success while the grant dies. Naming the likely cause here saves working back
+# from "permission stopped working" to a certificate that lapsed weeks ago.
+if [[ "${PREVIOUS_IDENTITY}" == "Developer ID Application"* &&
+      "${IDENTITY}" != "Developer ID Application"* ]]; then
+    echo
+    echo "!!  The last build used a Developer ID certificate and this one did not."
+    echo "    If you did not ask for that, the Developer ID has most likely"
+    echo "    expired or been removed — check with:"
+    echo "      security find-identity -v -p codesigning"
+fi
+
+if [[ "${IDENTITY}" == "Developer ID Application"* ]] &&
+   smartquit_identity_expires_within "${IDENTITY}" 30; then
+    echo
+    echo "!!  This Developer ID certificate expires within 30 days."
+    echo "    When it does, this build stops finding it and signs with whatever"
+    echo "    is left, which ends the Accessibility grant without an error."
+    echo "    Renew it at developer.apple.com before then."
 fi
 
 echo

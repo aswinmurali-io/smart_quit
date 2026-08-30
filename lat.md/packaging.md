@@ -95,6 +95,63 @@ Ambiguity inside a tier stops the build rather than falling through to the next.
 Two Developer ID certificates is a question to answer, and answering it by
 quietly signing with a weaker identity would spend the grant to avoid asking.
 
+## Both scripts select the identity through one file
+
+`Scripts/signing-identity.sh` is sourced by `build-app.sh` and `release.sh`, which used to choose separately.
+
+They had already drifted. `build-app.sh` refused an ambiguous match while
+`release.sh` took the first Developer ID it saw with `grep -m1`, so a keychain
+holding two of them could have the two scripts sign one bundle with different
+certificates. The requirements would differ, the grant would go, and both
+scripts would report success. Nothing detects that from inside the app, and
+neither script was wrong on its own terms — the disagreement was the fault.
+
+Two copies of a rule cannot be held in agreement by intention, so there is one
+copy. `release.sh` also asserts, after signing for distribution, that its
+signature produced the same requirement `build-app.sh` recorded a moment
+earlier, and stops if it did not. The hardened runtime and the entitlements it
+adds do not enter the requirement, so that is an equality rather than an
+approximation. It is checked because it is exactly the kind of invariant that
+holds until someone edits one of the two scripts.
+
+## What is compared is the requirement, not the identity's name
+
+`build/last-signing-requirement` holds the designated requirement of the last build, and that is what the next build is compared against.
+
+The stamp used to hold the identity's name. A name is a proxy for the
+requirement derived from it, and this codebase has been bitten twice by a proxy
+read as the real thing — once here, and once when a subrole that could not be
+read counted as a window that was not there. Comparing the requirement itself
+fires exactly when the grant dies and stays quiet otherwise, with nobody having
+to reason about what a certificate kind implies.
+
+The identity's name is still recorded alongside it, because it is what the
+warning has to print: "the requirement changed" tells a reader nothing they can
+act on, where the two certificate names tell them what happened.
+
+An ad-hoc requirement is a cdhash and differs on every build by construction, so
+the comparison is skipped for it. The ad-hoc branch has already said what it
+costs, and saying it twice would train the reader to skip both.
+
+## The build warns before the certificate expires
+
+A Developer ID that lapses takes the grant with it, silently, and this is the one failure that arrives on a date rather than from an edit.
+
+`security find-identity -v` lists valid identities only. The day the certificate
+expires it simply stops matching: the search falls through to Apple Development,
+the bundle is signed, everything reports success, and the Accessibility grant is
+gone. There is no error to read because nothing failed.
+
+So two warnings exist for it. One fires when the certificate is within thirty
+days of expiring, which is notice enough to renew. The other fires when a build
+signs with something weaker than the last build did, naming a lapsed or removed
+Developer ID as the likely cause — that one is the safety net for when the first
+was not read, and it turns "permission stopped working" into a sentence that
+points at the certificate instead of a week of looking elsewhere.
+
+`openssl x509 -checkend` is asked rather than parsing `notAfter`, whose day
+field is space-padded and trips `date -j -f` on single-digit days.
+
 With no unambiguous match the build stops. It used to sign ad-hoc and print a
 warning, which is how a properly signed install came to be replaced by an ad-hoc
 one: macOS went on showing the app as approved while telling it it had no
