@@ -10,9 +10,10 @@
 #
 # Set CODESIGN_IDENTITY to name the signing identity outright, or
 # SMARTQUIT_SIGNING_ACCOUNT to pick one by Apple ID. With neither, the build
-# uses the keychain's Apple Development certificate when there is exactly one,
-# and otherwise falls back to an ad-hoc signature — see the note under Signing
-# for what that costs.
+# uses the keychain's Apple Development certificate when there is exactly one.
+# Without a usable certificate the build stops rather than signing ad-hoc;
+# SMARTQUIT_ALLOW_ADHOC=1 asks for that anyway — see the note under Signing for
+# what it costs.
 
 set -euo pipefail
 
@@ -81,24 +82,72 @@ if [[ -z "${IDENTITY}" ]]; then
     fi
 fi
 
+# Signing ad-hoc is a decision, not a fallback.
+#
+# It was one until it cost an afternoon: an ad-hoc build silently replaced a
+# properly signed one, macOS went on showing the app as approved, and the app
+# went on being told it had no permission. It quit nothing and said nothing.
+# The warning that scrolled past during the build was the only sign, and a
+# warning nobody reads is not a choice anyone made. So the build now stops, and
+# SMARTQUIT_ALLOW_ADHOC=1 is how the cost gets accepted out loud — CI sets it,
+# because a runner has no certificate and no permission to lose.
 if [[ -z "${IDENTITY}" ]]; then
     if [[ -n "${CANDIDATES}" ]]; then
-        echo "==> Signing (ad-hoc — more than one Apple Development certificate matched)"
-        sed 's/^/      /' <<< "${CANDIDATES}"
-        echo "    Set SMARTQUIT_SIGNING_ACCOUNT to your Apple ID, or CODESIGN_IDENTITY to one of these."
+        REASON="more than one Apple Development certificate matched"
+        ADVICE="Set SMARTQUIT_SIGNING_ACCOUNT to your Apple ID, or CODESIGN_IDENTITY to one of these:"
     else
-        echo "==> Signing (ad-hoc — no Apple Development certificate${SIGNING_ACCOUNT:+ for ${SIGNING_ACCOUNT}} in the keychain)"
-        echo "    Set SMARTQUIT_SIGNING_ACCOUNT or CODESIGN_IDENTITY to use one."
+        REASON="no Apple Development certificate${SIGNING_ACCOUNT:+ for ${SIGNING_ACCOUNT}} in the keychain"
+        ADVICE="Set SMARTQUIT_SIGNING_ACCOUNT or CODESIGN_IDENTITY to name one."
     fi
+
+    if [[ "${SMARTQUIT_ALLOW_ADHOC:-0}" != "1" ]]; then
+        echo "error: cannot sign — ${REASON}." >&2
+        echo "       ${ADVICE}" >&2
+        [[ -n "${CANDIDATES}" ]] && sed 's/^/         /' >&2 <<< "${CANDIDATES}"
+        echo >&2
+        echo "       An ad-hoc signature would build, but its cdhash changes every time," >&2
+        echo "       so macOS stops recognising the app as the one you approved: the" >&2
+        echo "       checkbox stays ticked while the app is told it has no permission." >&2
+        echo "       To accept that anyway: SMARTQUIT_ALLOW_ADHOC=1 $0" >&2
+        exit 1
+    fi
+
+    echo "==> Signing (ad-hoc — ${REASON})"
     echo "    The Accessibility grant will not survive the next rebuild."
     echo "    Clear it with: tccutil reset Accessibility com.smartquit.SmartQuit"
     codesign --force --sign - --timestamp=none "${BUNDLE}"
+    IDENTITY="ad-hoc"
 else
     echo "==> Signing as ${IDENTITY}"
     codesign --force --sign "${IDENTITY}" --timestamp=none "${BUNDLE}"
 fi
 
 codesign --verify --verbose "${BUNDLE}"
+
+# A changed signature is the moment the Accessibility grant dies.
+#
+# TCC stores the grant against the code requirement the app had when it was
+# approved. Sign with a different identity — ad-hoc to real, Apple Development
+# to Developer ID, one Apple ID to another — and the stored requirement no
+# longer matches: macOS denies the app while System Settings still shows it
+# ticked, and re-ticking does not rebuild the record. Nothing in the app can
+# detect this; from inside, a stale grant and a missing one are the same
+# refusal. The build is the only place that knows the identity changed, so it
+# is the only place that can say so.
+STAMP="build/last-signing-identity"
+mkdir -p "$(dirname "${STAMP}")"
+PREVIOUS="$(cat "${STAMP}" 2>/dev/null || true)"
+printf '%s' "${IDENTITY}" > "${STAMP}"
+
+if [[ -n "${PREVIOUS}" && "${PREVIOUS}" != "${IDENTITY}" ]]; then
+    echo
+    echo "!!  The signing identity changed since the last build."
+    echo "      was: ${PREVIOUS}"
+    echo "      now: ${IDENTITY}"
+    echo "    macOS will refuse this build's Accessibility permission and show it"
+    echo "    as granted anyway. Clear the stale record and approve it once more:"
+    echo "      tccutil reset Accessibility com.smartquit.SmartQuit"
+fi
 
 echo
 echo "Built ${BUNDLE}"
