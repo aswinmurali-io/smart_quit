@@ -109,7 +109,25 @@ public final class AccessibilityWindowCounter: WindowCounting {
         switch outcome(for: result) {
         case .value:
             guard let windows = value as? [AXUIElement] else { return nil }
-            return windows.map(subrole(of:))
+            let subroles = windows.map(subrole(of:))
+
+            // Symmetric with the app-level failure below, and for a worse
+            // problem. `attributeUnsupported` is a permanent property of an
+            // element as readily as it is a locked screen, so a window from a
+            // toolkit that never vends `AXSubrole` holds its app at an unknown
+            // count for as long as that window is open: never quit, and absent
+            // from the apps-with-windows list, with nothing on screen to say
+            // why. Silent, this would be undiagnosable from a user's logs.
+            let unreadable = subroles.filter { $0 == .unknown }.count
+            if unreadable > 0 {
+                Log.windows.debug(
+                    """
+                    pid \(pid): \(unreadable) of \(windows.count) window(s) \
+                    would not report a subrole — count unknown
+                    """
+                )
+            }
+            return subroles
         case .none:
             return []
         case .unknown:

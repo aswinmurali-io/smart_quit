@@ -184,8 +184,21 @@ which is the whole of the bug.
 Keeping those two answers apart is what makes this safe to leave on. Finder's
 desktop window answers `noValue` every sweep, so it stays a certain answer and
 Finder stays at zero windows rather than becoming permanently unknown. An app
-that is genuinely windowless has no windows to be unreadable, so its clock goes
-on running through a lock and it is still quit on the other side.
+with no windows at all has nothing to be unreadable, so its clock goes on
+running through a lock and it is still quit on the other side.
+
+An app whose only windows are sheets or panels is the case in between. Those
+windows are windowless for our purposes when they can be read, but during a lock
+they are present and unreadable, so the app is held until the screen is unlocked
+rather than quit under it. That is the trade this section makes: a window that
+cannot be read cannot be told apart from a window that would not have counted.
+
+The same error means "this element has no such attribute" permanently as readily
+as it means "the screen is locked", so a window from a toolkit that never vends
+`AXSubrole` holds its app at an unknown count for as long as it is open. An app
+that is never quit and never appears among the apps with windows is this, and
+the counter logs how many of an app's windows would not answer so it can be
+recognised from a log stream.
 
 See `WindowSubrole` and `standardWindowCount(pid:)` in
 `Sources/SmartQuitCore/AccessibilityWindowCounter.swift`.
